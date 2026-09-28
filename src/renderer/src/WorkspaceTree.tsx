@@ -161,18 +161,18 @@ export default function WorkspaceTree({
         const groupKey = `group:${group.id}`
         return <div key={group.id} ref={registerNode(groupKey)} role="treeitem" aria-label={group.name} aria-expanded={!group.collapsed} aria-selected={state.layout.groupId === group.id && !selectedSessionId} tabIndex={tabKey === groupKey ? 0 : -1} data-tree-key={groupKey} className="tree-group-node" onFocus={event => { if (event.target === event.currentTarget) setFocusedKey(groupKey) }}>
           <div className={`group-row tree-group-row ${state.layout.groupId === group.id ? 'selected' : ''}${targetClass('group', group.id)}`} draggable onDragStart={event => startDrag(event, { kind: 'group', id: group.id })} onDragOver={event => dragOver(event, 'group', group.id)} onDrop={event => dropOnRow(event, 'group', group.id)}>
-            <button className="icon-button tree-toggle" aria-label={`${group.collapsed ? 'Expand' : 'Collapse'} group ${group.name}`} title={group.collapsed ? 'Expand group' : 'Collapse group'} onClick={() => onToggleGroup(group)}>{group.collapsed ? <ChevronRight size={14}/> : <ChevronDown size={14}/>}</button>
+            <button className="icon-button tree-toggle" aria-label={`${group.collapsed ? 'Expand' : 'Collapse'} group ${group.name}`} title={group.collapsed ? 'Expand group' : 'Collapse group'} onClick={() => onToggleGroup(group)}>{group.collapsed ? <ChevronRight size={17}/> : <ChevronDown size={17}/>}</button>
             <button className="nav-item tree-select" tabIndex={-1} title={`${group.name} · ${running}/${sessions.length} sessions running · Drag to reorder`} onClick={() => onSelectGroup(group)}><span className="group-dot" style={{ '--group-color': group.color } as CSSProperties}/><span>{group.name}</span><span className="nav-count">{sessions.length}</span></button>
             <div className="tree-row-tools">
-              <button className="icon-button" aria-label={`New terminal in group ${group.name}`} title="New terminal in group" onClick={() => onCreateSession(group.id)}><Plus size={14}/></button>
-              <button className="icon-button tree-edit" aria-label={`Edit group ${group.name}`} title="Edit group (F2)" onClick={() => onEditGroup(group)}><Pencil size={13}/></button>
+              <button className="icon-button" aria-label={`New terminal in group ${group.name}`} title="New terminal in group" onClick={() => onCreateSession(group.id)}><Plus size={17}/></button>
+              <button className="icon-button tree-edit" aria-label={`Edit group ${group.name}`} title="Edit group (F2)" onClick={() => onEditGroup(group)}><Pencil size={15}/></button>
             </div>
           </div>
           {!group.collapsed && <div role="group" className="tree-sessions">
             {sessions.map(session => {
               const sessionKey = `session:${session.id}`
               return <div key={session.id} ref={registerNode(sessionKey)} role="treeitem" aria-label={session.name} aria-selected={selectedSessionId === session.id} tabIndex={tabKey === sessionKey ? 0 : -1} data-tree-key={sessionKey} className={`tree-session-row ${selectedSessionId === session.id ? 'selected' : ''}${targetClass('session', session.id)}`} draggable onFocus={event => { if (event.target === event.currentTarget) setFocusedKey(sessionKey) }} onDragStart={event => startDrag(event, { kind: 'session', id: session.id })} onDragOver={event => dragOver(event, 'session', session.id)} onDrop={event => dropOnRow(event, 'session', session.id)}>
-                <GripVertical className="tree-grip" size={12} aria-hidden="true"/>
+                <GripVertical className="tree-grip" size={14} aria-hidden="true"/>
                 <button className="tree-select tree-session-select" tabIndex={-1} title={`${session.name}\n${session.cwd}\n${session.command || state.shell}\n${statusLabels[session.status]}${session.detached ? ' · Detached window' : ''}`} onClick={() => onOpenSession(session)}>
                   {session.kind === 'agent' ? <Bot className="tree-kind agent" size={15}/> : <SquareTerminal className="tree-kind" size={15}/>}
                   <span className="tree-session-text"><span>{session.name}</span></span>
@@ -180,7 +180,7 @@ export default function WorkspaceTree({
                   <i className={`tree-status ${session.status}`} aria-label={statusLabels[session.status]} title={statusLabels[session.status]}/>
                 </button>
                 <div className="tree-row-tools">
-                  <button className="icon-button tree-edit" aria-label={`Edit terminal ${session.name}`} title="Edit terminal (F2)" onClick={() => onEditSession(session)}><Pencil size={13}/></button>
+                  <button className="icon-button tree-edit" aria-label={`Edit terminal ${session.name}`} title="Edit terminal (F2)" onClick={() => onEditSession(session)}><Pencil size={15}/></button>
                 </div>
               </div>
             })}

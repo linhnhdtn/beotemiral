@@ -60,12 +60,17 @@ export default function TerminalView({ session, reportError, backgroundTranspare
     })
     const input = term.onData((data) => { if (ready && !cancelled) void window.harbor.writeTerminal(session.id, data).catch(failure) })
     term.attachCustomKeyEventHandler((event) => {
+      // Ended session: Enter restarts it, no mouse needed. disableStdin mirrors "not live".
+      if (term.options.disableStdin && event.key === 'Enter' && !event.ctrlKey && !event.altKey && !event.metaKey) {
+        if (event.type === 'keydown') void window.harbor.restartSession(session.id).catch(failure)
+        return false
+      }
       if (event.ctrlKey && event.shiftKey && ['C', 'V', 'c', 'v'].includes(event.key)) {
         event.preventDefault()
         if (event.type === 'keydown') { if (event.key.toLowerCase() === 'c') void copy(); else void paste() }
         return false
       }
-      if ((event.ctrlKey && event.key === 'Tab') || (event.ctrlKey && event.shiftKey && ['t', 'p'].includes(event.key.toLowerCase()))) return false
+      if ((event.ctrlKey && event.key === 'Tab') || (event.ctrlKey && event.shiftKey && ['t', 'p', 'r'].includes(event.key.toLowerCase()))) return false
       return true
     })
     const resize = () => {

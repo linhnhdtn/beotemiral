@@ -4,6 +4,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { setTimeout as delay } from 'node:timers/promises'
+import { execSync } from 'node:child_process'
 import { SessionManager, isLive } from '../src/main/sessions'
 import { WorkspaceStore, freshWorkspace } from '../src/main/store'
 import type { LaunchSpec, TerminalOutput, Workspace } from '../src/shared/types'
@@ -154,12 +155,14 @@ test('natural command exit cleans disowned descendants, including a child ignori
 
 test('restart reuses session identity, rejects live restart and remove stops its process', { timeout: 20_000 }, async t => {
   const { manager, create, output } = fixture(t)
-  const id = create("printf 'STARTED\\n'; sleep 120")
+  const id = create("printf 'STARTED\\n'; sleep 120.4242")
   const firstPid = manager.get(id).pid!
   await assert.rejects(manager.restart(id), /Stop the session/)
   await manager.stop(id)
-  await manager.restart(id)
+  // Double Enter / Ctrl+Shift+R must not spawn two processes.
+  await Promise.all([manager.restart(id), manager.restart(id)])
   await until(() => (output.get(id)?.match(/STARTED/g)?.length ?? 0) >= 2, 'restarted command runs')
+  assert.equal(execSync(`pgrep -fc '^sleep 120[.]4242' || true`).toString().trim(), '1')
   const nextPid = manager.get(id).pid!
   assert.notEqual(nextPid, firstPid)
   assert.equal(manager.workspace.sessions.length, 1)

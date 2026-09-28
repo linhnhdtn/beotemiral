@@ -10,9 +10,9 @@
 .workspace-tree .tree-group-row.selected{background:#335b4d}
 .workspace-tree .tree-group-row .group-dot{width:7px;height:7px;margin:0 5px 0 1px}
 .workspace-tree .tree-group-row .nav-count{opacity:1;flex:none;font-size:11px;min-width:16px;margin-right:4px;padding:1px 3px;color:#a9bec5}
-.workspace-tree .tree-group-row .tree-toggle{width:20px;height:27px;margin-right:2px;color:#b2c6cf}
+.workspace-tree .tree-group-row .tree-toggle{width:26px;height:30px;margin-right:2px;color:#b2c6cf}
 .tree-row-tools{display:flex;align-items:center;flex:none;gap:1px;margin-left:1px;margin-right:2px}
-.workspace-tree .tree-row-tools .icon-button{width:23px;height:25px}
+.workspace-tree .tree-row-tools .icon-button{width:28px;height:28px}
 .workspace-tree .tree-edit{color:#99b8ba}
 .tree-group-node:focus-visible>.tree-group-row,.tree-session-row:focus-visible{outline:2px solid var(--mint);outline-offset:1px}
 .tree-sessions{margin:0 0 7px 11px;padding-left:7px;border-left:1px solid #60748055}
@@ -27,7 +27,7 @@
 .tree-session-text>span{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 .tree-session-row.selected .tree-session-text>span{color:#c5f2df}
-.tree-grip{flex:none;color:#7c919b;opacity:.35;width:11px;margin-right:2px;cursor:grab}
+.tree-grip{flex:none;color:#7c919b;opacity:.35;width:14px;margin-right:2px;cursor:grab}
 .tree-session-row:hover .tree-grip,.tree-session-row:focus-within .tree-grip{opacity:1}
 .tree-group-row[draggable=true]{cursor:grab}
 .tree-group-row[draggable=true]:active,.tree-session-row[draggable=true]:active{cursor:grabbing}

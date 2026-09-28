@@ -24,6 +24,7 @@ export const isLive = (session: Session): boolean => session.status === 'startin
 
 export class SessionManager extends EventEmitter {
   private runtimes = new Map<string, Runtime>()
+  private restarting = new Set<string>()
   constructor(readonly workspace: Workspace, readonly shell: string, private readonly hasViewer: (id: string) => boolean = () => false) { super() }
 
   get(id: string): Session {
@@ -122,11 +123,15 @@ export class SessionManager extends EventEmitter {
   async restart(id: string): Promise<void> {
     const session = this.get(id)
     if (isLive(session)) throw new Error('Stop the session before restarting it.')
-    const r = this.runtimes.get(id)
-    await r?.cleanup
-    if (r) await new Promise<void>(resolve => r.terminal.write('', resolve))
-    r?.terminal.dispose()
-    this.launch(session)
+    if (this.restarting.has(id)) return // repeated key/click while the previous restart is in flight
+    this.restarting.add(id)
+    try {
+      const r = this.runtimes.get(id)
+      await r?.cleanup
+      if (r) await new Promise<void>(resolve => r.terminal.write('', resolve))
+      r?.terminal.dispose()
+      this.launch(session)
+    } finally { this.restarting.delete(id) }
   }
   async remove(id: string): Promise<void> {
     await this.stop(id)

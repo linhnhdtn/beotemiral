@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
-import { Activity, ArrowLeft, ArrowUpRight, Bot, Check, ChevronDown, ChevronRight, Folder, FolderOpen, Layers3, LayoutGrid, LoaderCircle, MoreHorizontal, PanelsTopLeft, Plus, Power, Search, Settings2, Square, SquareTerminal, TerminalSquare, Trash2, Undo2, X } from 'lucide-react'
+import { Activity, ArrowLeft, ArrowUpRight, Bot, Check, ChevronDown, ChevronRight, Folder, FolderOpen, Layers3, LayoutGrid, LoaderCircle, MoreHorizontal, Plus, Power, Search, Settings2, Square, SquareTerminal, TerminalSquare, Trash2, Undo2, X } from 'lucide-react'
 import type { AppState, Group, LaunchSpec, LaunchTemplate, Session } from '../../shared/types'
 import TerminalView from './TerminalView'
 import AppearanceSettings from './AppearanceSettings'
@@ -52,7 +52,14 @@ export default function App() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') { setModal(null); document.querySelectorAll('details.menu[open], details.appearance-settings[open]').forEach(d => d.removeAttribute('open')); return }
-      if (detachedId || !state) return
+      if (!state) return
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'r') {
+        e.preventDefault()
+        const target = state.sessions.find(s => s.id === (detachedId || (state.layout.view === 'terminal' ? state.layout.activeId : null)))
+        if (target && !running(target) && !e.repeat) void act(() => api.restartSession(target.id))
+        return
+      }
+      if (detachedId) return
       if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 't') { e.preventDefault(); setModal({ type: 'new' }) }
       if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'p') { e.preventDefault(); setModal({ type: 'search' }) }
       if (e.ctrlKey && e.key === 'Tab' && !modal) {
@@ -68,7 +75,7 @@ export default function App() {
     return () => { window.removeEventListener('keydown', handler); window.removeEventListener('pointerdown', outside) }
   }, [state, modal, detachedId, act])
 
-  if (!state) return <div className="startup"><div className="brand-mark"><PanelsTopLeft size={30}/></div><h1>Task Harbor</h1>{loadError ? <><p>{loadError}</p><button className="button secondary" onClick={() => window.location.reload()}>Retry</button></> : <><LoaderCircle className="spin" size={22}/><p>Opening workspace…</p></>}</div>
+  if (!state) return <div className="startup"><h1>Task Harbor</h1>{loadError ? <><p>{loadError}</p><button className="button secondary" onClick={() => window.location.reload()}>Retry</button></> : <><LoaderCircle className="spin" size={22}/><p>Opening workspace…</p></>}</div>
   const backgroundTransparency = appearancePreview ?? state.appearance.backgroundTransparency
   const selectedGroup = state.groups.find(g => g.id === state.layout.groupId)
   const allVisible = state.sessions.filter(s => !selectedGroup || s.groupId === selectedGroup.id)
@@ -101,23 +108,22 @@ export default function App() {
     {running(s) && <button onClick={() => void act(() => api.stopSession(s.id))}><Square size={14}/>Stop session</button>}
     <div className="menu-divider"/><button className="danger-text" onClick={() => void act(() => api.removeSession(s.id))}><Trash2 size={15}/>Delete session</button>
   </Menu>
-  const terminalHeader = (s: Session, secondary: boolean, clipboard?: ReactNode) => <div className="pane-header"><div className="pane-name"><SessionIcon kind={s.kind} size={16}/><strong>{s.name}</strong><Status session={s}/><span className="pane-path" title={s.cwd}>{s.cwd}</span></div><div className="pane-actions">{clipboard}{!detachedId && !secondary && <><button className="icon-button" title="Back to overview" aria-label="Back to overview" onClick={() => void act(() => api.updateLayout({ view: 'overview' }))}><ArrowLeft size={16}/></button><div className="split-picker"><select aria-label="Split terminal" value={split?.id || ''} onChange={e => void act(() => api.updateLayout({ splitId: e.target.value || null }))}><option value="">Single pane</option>{state.sessions.filter(session => session.id !== s.id).map(session => <option key={session.id} value={session.id}>Split · {session.name}</option>)}</select><ChevronDown size={13}/></div></>}{!running(s) && <button className="text-button" onClick={() => void act(() => api.restartSession(s.id))}><Undo2 size={13}/>Restart</button>}{secondary && <button className="icon-button" aria-label="Close split pane" title="Close split pane" onClick={() => void act(() => api.updateLayout({ splitId: null }))}><X size={16}/></button>}{sessionMenu(s)}</div></div>
+  const terminalHeader = (s: Session, secondary: boolean, clipboard?: ReactNode) => <div className="pane-header"><div className="pane-name"><SessionIcon kind={s.kind} size={16}/><strong>{s.name}</strong><Status session={s}/><span className="pane-path" title={s.cwd}>{s.cwd}</span></div><div className="pane-actions">{clipboard}{!detachedId && !secondary && <><button className="icon-button" title="Back to overview" aria-label="Back to overview" onClick={() => void act(() => api.updateLayout({ view: 'overview' }))}><ArrowLeft size={16}/></button><div className="split-picker"><select aria-label="Split terminal" value={split?.id || ''} onChange={e => void act(() => api.updateLayout({ splitId: e.target.value || null }))}><option value="">Single pane</option>{state.sessions.filter(session => session.id !== s.id).map(session => <option key={session.id} value={session.id}>Split · {session.name}</option>)}</select><ChevronDown size={13}/></div></>}{!running(s) && <button className="text-button" title="Restart · Enter in terminal · Ctrl+Shift+R" onClick={() => void act(() => api.restartSession(s.id))}><Undo2 size={13}/>Restart</button>}{secondary && <button className="icon-button" aria-label="Close split pane" title="Close split pane" onClick={() => void act(() => api.updateLayout({ splitId: null }))}><X size={16}/></button>}{sessionMenu(s)}</div></div>
   const terminalPane = (s: Session, secondary = false) => <section className="terminal-pane" key={s.id} aria-label={`Terminal ${s.name}`}>
     {s.detached && !detachedId ? <>{terminalHeader(s, secondary)}<div className="detached-placeholder"><div className="empty-symbol"><ArrowUpRight size={28}/></div><h3>Session is in a separate window</h3><p>The process keeps running while you switch windows.</p><div className="button-row"><button className="button primary" onClick={() => void act(() => api.focusSession(s.id))}>Go to window</button><button className="button secondary" onClick={() => void act(() => api.dockSession(s.id))}><Undo2 size={15}/>Bring back here</button></div></div></> : <TerminalView renderHeader={clipboard => terminalHeader(s, secondary, clipboard)} key={`${s.id}:${s.startedAt}`} session={s} reportError={reportError} backgroundTransparency={backgroundTransparency}/>}
     {s.pendingLaunch && running(s) && <div className="terminal-notice">New command / directory saved for the next run. The current session keeps running.</div>}
-    {(s.error || s.restored || (s.exitCode !== undefined && !running(s))) && <div className={`terminal-notice ${s.error ? 'error' : ''}`}>{s.error || (s.restored ? 'Configuration restored. Choose “Restart” to start a new session.' : `Session ended · exit code ${s.exitCode}`)}</div>}
+    {(s.error || s.restored || (s.exitCode !== undefined && !running(s))) && <div className={`terminal-notice ${s.error ? 'error' : ''}`}>{s.error || (s.restored ? 'Configuration restored. Press Enter, Ctrl+Shift+R or choose “Restart” to start a new session.' : `Session ended · exit code ${s.exitCode} · Press Enter or Ctrl+Shift+R to restart`)}</div>}
   </section>
 
   return <div className={`app ${detachedId ? 'detached-app' : ''}`} style={{ '--background-alpha': (100 - backgroundTransparency) / 100 } as CSSProperties}>
     {!detachedId && <aside className="sidebar">
-      <div className="brand"><div className="brand-mark"><PanelsTopLeft size={23}/></div><div><strong>Task Harbor</strong><span>YOUR LOCAL WORKSPACE</span></div></div>
       <div className="sidebar-actions">
         <button className="button primary sidebar-new-terminal" title="New terminal (Ctrl+Shift+T)" onClick={() => setModal({ type: 'new' })}><Plus size={17}/><span>New terminal</span></button>
         <AppearanceSettings value={backgroundTransparency} preview={setAppearancePreview} reportError={reportError}/>
       </div>
       <button className="sidebar-search" onClick={() => setModal({ type: 'search' })}><Search size={16}/><span>Quick find a session</span><kbd>⌃ P</kbd></button>
       <button className={`nav-item ${!selectedGroup ? 'selected' : ''}`} onClick={() => selectGroup(null)}><LayoutGrid size={18}/><span>Dashboard</span><span className="nav-count">{state.sessions.length}</span></button>
-      <div className="nav-label groups-label"><span>YOUR GROUPS</span><button className="icon-button" title="Create group" aria-label="Create group" onClick={() => setModal({ type: 'group' })}><Plus size={15}/></button></div>
+      <div className="nav-label groups-label"><span>YOUR GROUPS</span><button className="icon-button" title="Create group" aria-label="Create group" onClick={() => setModal({ type: 'group' })}><Plus size={18}/></button></div>
       <WorkspaceTree state={state} selectedSessionId={state.layout.view === 'terminal' ? active?.id : undefined}
         onSelectGroup={group => { if (group.collapsed) void act(() => api.updateGroup(group.id, { collapsed: false })); selectGroup(group.id) }}
         onOpenSession={openSession} onEditGroup={group => setModal({ type: 'group', group })}
@@ -129,7 +135,7 @@ export default function App() {
       <div className="sidebar-bottom"><div className="local-workspace"><div className="local-avatar"><TerminalSquare size={18}/></div><div><strong>On your machine</strong><span><i/>{live.length} running</span></div><button className="icon-button" title="Quit completely" aria-label="Quit completely" onClick={() => void act(() => api.quit())}><Power size={16}/></button></div></div>
     </aside>}
     <main className="main">
-      {detachedId && <header className="topbar"><div className="breadcrumbs"><PanelsTopLeft size={18}/><span>Task Harbor</span><ChevronRight size={13}/><strong>{active?.name || 'Terminal'}</strong></div><div className="topbar-actions"><AppearanceSettings value={backgroundTransparency} preview={setAppearancePreview} reportError={reportError}/><button className="button secondary" onClick={() => active && void act(() => api.dockSession(active.id))}><Undo2 size={15}/>Back to main window</button></div></header>}
+      {detachedId && <header className="topbar"><div className="breadcrumbs"><span>Task Harbor</span><ChevronRight size={13}/><strong>{active?.name || 'Terminal'}</strong></div><div className="topbar-actions"><AppearanceSettings value={backgroundTransparency} preview={setAppearancePreview} reportError={reportError}/><button className="button secondary" onClick={() => active && void act(() => api.dockSession(active.id))}><Undo2 size={15}/>Back to main window</button></div></header>}
       {state.warning && <div className="workspace-warning">{state.warning}</div>}
       {detachedId ? <div className="terminal-workspace detached-workspace">{active ? terminalPane(active) : <div className="empty-state"><h2>Session no longer exists</h2><p>You can close this window.</p></div>}</div> : state.layout.view === 'terminal' && active ? <div className="terminal-workspace">
         <div className={`terminal-panes ${split ? 'split' : ''}`}>{terminalPane(active)}{split && terminalPane(split, true)}</div>
