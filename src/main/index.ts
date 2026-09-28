@@ -1,6 +1,5 @@
 import { app, BrowserWindow, Menu, Tray, nativeImage, ipcMain, dialog, clipboard } from 'electron'
-import { basename, join } from 'node:path'
-import { readFile, stat, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { homedir } from 'node:os'
 import { randomUUID } from 'node:crypto'
 import { z } from 'zod'
@@ -8,8 +7,7 @@ import { WorkspaceStore, appearanceSchema, colorSchema, launchSchema, layoutSche
 import { SessionManager, isLive } from './sessions'
 import { removeWorkspaceGroup } from './groups'
 import { moveWorkspaceSession, updateWorkspaceSession } from './workspace-actions'
-import { exportWorkspaceConfiguration, importWorkspaceConfiguration, MAX_IMPORT_BYTES, parseWorkspaceTransfer } from './workspace-transfer'
-import type { AppState, TerminalOutput, WorkspaceTransfer } from '../shared/types'
+import type { AppState, TerminalOutput } from '../shared/types'
 
 app.setName('Task Harbor')
 if (process.env.TASK_HARBOR_DATA_DIR) app.setPath('userData', process.env.TASK_HARBOR_DATA_DIR)
@@ -28,7 +26,6 @@ const detached = new Map<string, BrowserWindow>()
 const subscribers = new Map<number, Map<string, string>>()
 const idSchema = z.string().min(1).max(100)
 const windowIds = new Set<number>()
-const importPreviews = new Map<number, { token: string; plan: WorkspaceTransfer }>()
 
 function state(): AppState {
   return { ...manager.workspace, home: homedir(), shell: manager.shell, warning }
@@ -83,7 +80,7 @@ function createWindow(sessionId?: string): BrowserWindow {
   window.webContents.on('will-navigate', event => event.preventDefault())
   window.webContents.on('will-attach-webview', event => event.preventDefault())
   window.webContents.session.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false))
-  window.webContents.on('render-process-gone', () => { subscribers.delete(wcId); importPreviews.delete(wcId) })
+  window.webContents.on('render-process-gone', () => { subscribers.delete(wcId) })
   window.on('ready-to-show', () => window.show())
   window.on('close', event => {
     if (quitting) return
@@ -92,7 +89,6 @@ function createWindow(sessionId?: string): BrowserWindow {
   window.on('closed', () => {
     windowIds.delete(wcId)
     subscribers.delete(wcId)
-    importPreviews.delete(wcId)
     if (sessionId) {
       detached.delete(sessionId)
       const session = manager.workspace.sessions.find(s => s.id === sessionId)
@@ -290,36 +286,6 @@ function registerIPC(): void {
   handle('choose-directory', async event => {
     const result = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender)!, { title: 'Chọn thư mục làm việc', properties: ['openDirectory'], defaultPath: homedir() })
     return result.canceled ? null : result.filePaths[0]
-  })
-  handle('choose-import', async event => {
-    const result = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender)!, {
-      title: 'Nhập cấu hình Task Harbor', properties: ['openFile'], filters: [{ name: 'Cấu hình JSON', extensions: ['json'] }]
-    })
-    if (result.canceled || !result.filePaths[0]) return null
-    const file = result.filePaths[0]
-    const info = await stat(file)
-    if (!info.isFile() || info.size > MAX_IMPORT_BYTES) throw new Error('Hãy chọn file cấu hình JSON không quá 5 MB.')
-    const plan = parseWorkspaceTransfer(await readFile(file, 'utf8'))
-    if (!windowIds.has(event.sender.id)) return null
-    const token = randomUUID()
-    importPreviews.set(event.sender.id, { token, plan })
-    return { ...plan, token, fileName: basename(file) }
-  })
-  handle('import-workspace', (event, token) => {
-    const preview = importPreviews.get(event.sender.id)
-    if (!preview || preview.token !== idSchema.parse(token)) throw new Error('Bản xem trước đã hết hiệu lực. Hãy chọn lại file cấu hình.')
-    const result = importWorkspaceConfiguration(manager.workspace, preview.plan)
-    importPreviews.delete(event.sender.id)
-    changed()
-    return result
-  })
-  handle('export-workspace', async event => {
-    const result = await dialog.showSaveDialog(BrowserWindow.fromWebContents(event.sender)!, {
-      title: 'Xuất cấu hình Task Harbor', defaultPath: 'task-harbor-workspace.json', filters: [{ name: 'Cấu hình JSON', extensions: ['json'] }]
-    })
-    if (result.canceled || !result.filePath) return false
-    await writeFile(result.filePath, JSON.stringify(exportWorkspaceConfiguration(manager.workspace), null, 2), { mode: 0o600 })
-    return true
   })
   handle('read-clipboard', () => clipboard.readText())
   handle('write-clipboard', (_e, text) => { clipboard.writeText(z.string().max(1024 * 1024).parse(text)) })
