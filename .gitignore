@@ -1,0 +1,13 @@
+node_modules/
+out/
+release/
+test-results/
+playwright-report/
+.serena/
+.codebase-memory/
+.agents/
+.codex/
+.env
+.env.*
+!.env.example
+*.log
