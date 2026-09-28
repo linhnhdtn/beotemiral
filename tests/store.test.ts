@@ -14,7 +14,7 @@ function fixture(t: { after(fn: () => void): void }) {
 
 function session(status: Session['status'], id = status): Session {
   return {
-    id, name: `Phiên ${id}`, kind: 'agent', cwd: '/tmp', command: 'codex', groupId: 'default',
+    id, name: `Session ${id}`, kind: 'agent', cwd: '/tmp', command: 'codex', groupId: 'default',
     status, startedAt: '2026-09-21T01:00:00.000Z', pid: 123456,
     detached: true, ...(status === 'finished' ? { exitCode: 0 } : {})
   }
@@ -28,14 +28,14 @@ test('a new workspace is usable without creating a file', t => {
   assert.deepEqual(readdirSync(dir), [])
   const first = store.load()
   first.groups[0].name = 'Changed'
-  assert.equal(store.load().groups[0].name, 'Không gian chung')
+  assert.equal(store.load().groups[0].name, 'General')
 })
 
 test('persists group order, colors, Unicode templates and layout; restores sessions without live PIDs', t => {
   const { dir, file } = fixture(t)
   const state = freshWorkspace()
-  state.groups.unshift({ id: 'backend', name: 'Máy chủ', color: '#abcdef' })
-  state.templates.push({ id: 'agent', name: 'Lập trình viên', kind: 'agent', cwd: '/tmp', command: 'codex --help' })
+  state.groups.unshift({ id: 'backend', name: 'Server', color: '#abcdef' })
+  state.templates.push({ id: 'agent', name: 'Developer', kind: 'agent', cwd: '/tmp', command: 'codex --help' })
   state.sessions = (['running', 'starting', 'finished', 'stopped', 'error'] as const).map(status => session(status))
   state.layout = { view: 'terminal', activeId: 'running', splitId: 'finished', groupId: 'backend' }
   const store = new WorkspaceStore(file)
@@ -69,7 +69,7 @@ test('preserves malformed JSON as a recovery copy and starts a fresh workspace',
   writeFileSync(file, content)
   const store = new WorkspaceStore(file)
   assert.deepEqual(store.load(), freshWorkspace())
-  assert.match(store.warning ?? '', /cấu hình cũ/)
+  assert.match(store.warning ?? '', /previous configuration/)
   const backups = readdirSync(dir).filter(name => name.startsWith('workspace.json.corrupt-'))
   assert.equal(backups.length, 1)
   assert.equal(readFileSync(join(dir, backups[0]), 'utf8'), content)

@@ -28,7 +28,7 @@ export class SessionManager extends EventEmitter {
 
   get(id: string): Session {
     const session = this.workspace.sessions.find(s => s.id === id)
-    if (!session) throw new Error('Không tìm thấy phiên terminal.')
+    if (!session) throw new Error('Terminal session not found.')
     return session
   }
   create(spec: LaunchSpec): string {
@@ -48,7 +48,7 @@ export class SessionManager extends EventEmitter {
     Object.assign(session, { status: 'starting', startedAt: new Date().toISOString(), endedAt: undefined, exitCode: undefined, error: undefined, pid: undefined, restored: false, pendingLaunch: undefined })
     this.emit('changed')
     try {
-      if (!isAbsolute(session.cwd) || !statSync(session.cwd).isDirectory()) throw new Error('Thư mục làm việc không tồn tại hoặc không hợp lệ.')
+      if (!isAbsolute(session.cwd) || !statSync(session.cwd).isDirectory()) throw new Error('Working directory does not exist or is invalid.')
       const env = Object.fromEntries(Object.entries(process.env).filter(([key, value]) => value !== undefined && !key.startsWith('ELECTRON_'))) as Record<string, string>
       delete env.NODE_OPTIONS
       const pty = spawn(this.shell, session.command.trim() ? ['-lic', session.command] : ['-l'], {
@@ -77,9 +77,9 @@ export class SessionManager extends EventEmitter {
         session.endedAt = new Date().toISOString()
         session.exitCode = exitCode
         session.status = runtime.stopping ? 'stopped' : exitCode === 0 && !signal ? 'finished' : 'error'
-        if (signal && !runtime.stopping) session.error = `Tiến trình kết thúc bởi signal ${signal}.`
+        if (signal && !runtime.stopping) session.error = `Process terminated by signal ${signal}.`
         runtime.cleanup = runtime.tree?.stop()
-        runtime.cleanup?.catch(error => { session.error = `Không dừng được tiến trình con: ${String(error)}`; this.emit('changed') })
+        runtime.cleanup?.catch(error => { session.error = `Could not stop child processes: ${String(error)}`; this.emit('changed') })
         runtime.resolveExit()
         this.emit('changed')
       })
@@ -121,7 +121,7 @@ export class SessionManager extends EventEmitter {
   }
   async restart(id: string): Promise<void> {
     const session = this.get(id)
-    if (isLive(session)) throw new Error('Hãy dừng phiên trước khi chạy lại.')
+    if (isLive(session)) throw new Error('Stop the session before restarting it.')
     const r = this.runtimes.get(id)
     await r?.cleanup
     if (r) await new Promise<void>(resolve => r.terminal.write('', resolve))

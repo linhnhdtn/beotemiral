@@ -3,11 +3,11 @@ import type { Workspace } from '../shared/types'
 
 /** Move only group membership; running PTYs and terminal history remain untouched. */
 export function removeWorkspaceGroup(workspace: Workspace, id: string, targetId?: string): void {
-  if (!workspace.groups.some(group => group.id === id)) throw new Error('Nhóm không tồn tại.')
+  if (!workspace.groups.some(group => group.id === id)) throw new Error('Group does not exist.')
   const remaining = workspace.groups.filter(group => group.id !== id)
-  if (targetId && !remaining.some(group => group.id === targetId)) throw new Error('Hãy chọn một nhóm nhận phiên khác.')
+  if (targetId && !remaining.some(group => group.id === targetId)) throw new Error('Choose a different group to receive the sessions.')
   const target = remaining.find(group => group.id === targetId) ?? remaining[0] ?? {
-    id: randomUUID(), name: 'Không gian chung', color: '#55d6be'
+    id: randomUUID(), name: 'General', color: '#55d6be'
   }
   if (remaining.length === 0) remaining.push(target)
   for (const session of workspace.sessions) if (session.groupId === id) session.groupId = target.id

@@ -31,7 +31,7 @@ function fixture(t: TestContext, shell = '/bin/bash', workspace: Workspace = fre
     rmSync(dir, { recursive: true, force: true })
   })
   const create = (command = '', overrides: Partial<LaunchSpec> = {}) => manager.create({
-    name: 'Phiên kiểm thử', kind: 'terminal', groupId: workspace.groups[0].id, cwd: dir, command, ...overrides
+    name: 'Test session', kind: 'terminal', groupId: workspace.groups[0].id, cwd: dir, command, ...overrides
   })
   return { dir, manager, output, events, create }
 }
@@ -51,17 +51,17 @@ function alive(pid: number): boolean {
 
 test('real commands expose successful and nonzero exit codes, Unicode and ANSI output', { timeout: 20_000 }, async t => {
   const { manager, create, output, events } = fixture(t)
-  const success = create("printf '\\033[32mXin chào Việt Nam\\033[0m\\n'; exit 0")
+  const success = create("printf '\\033[32mHello café ✓\\033[0m\\n'; exit 0")
   const failure = create("printf 'failed-command\\n'; exit 17", { kind: 'agent' })
   await until(() => !isLive(manager.get(success)) && !isLive(manager.get(failure)), 'both commands finish')
-  await until(() => (output.get(success) ?? '').includes('Xin chào Việt Nam'), 'UTF-8 output delivered')
+  await until(() => (output.get(success) ?? '').includes('Hello café ✓'), 'UTF-8 output delivered')
   assert.equal(manager.get(success).status, 'finished')
   assert.equal(manager.get(success).exitCode, 0)
   assert.equal(manager.get(failure).status, 'error')
   assert.equal(manager.get(failure).exitCode, 17)
   assert.ok(manager.get(success).endedAt)
   const snapshot = await manager.snapshot(success)
-  assert.match(snapshot.data, /Xin chào Việt Nam/)
+  assert.match(snapshot.data, /Hello café ✓/)
   assert.match(snapshot.data, /\x1b\[/, 'ANSI state survives terminal serialization')
   const seqs = events.filter(e => e.id === success).map(e => e.seq)
   assert.deepEqual(seqs, seqs.map((_, index) => index + 1))
@@ -89,8 +89,8 @@ test('interactive shell accepts Unicode, Ctrl+C, resize, and stays alive across 
   const { manager, create, output } = fixture(t)
   const id = create()
   const pid = manager.get(id).pid!
-  manager.write(id, "printf '\\n%s\\n' 'Dữ liệu từ bàn phím'; sleep 120\r")
-  await until(() => (output.get(id) ?? '').includes('\r\nDữ liệu từ bàn phím\r\n'), 'interactive Unicode command executed')
+  manager.write(id, "printf '\\n%s\\n' 'Keyboard input ✓'; sleep 120\r")
+  await until(() => (output.get(id) ?? '').includes('\r\nKeyboard input ✓\r\n'), 'interactive Unicode command executed')
   manager.write(id, '\x03')
   manager.resize(id, 82, 22)
   manager.write(id, "printf '\\nSIZE:'; stty size; printf 'AFTER_INTERRUPT\\n'\r")
@@ -156,7 +156,7 @@ test('restart reuses session identity, rejects live restart and remove stops its
   const { manager, create, output } = fixture(t)
   const id = create("printf 'STARTED\\n'; sleep 120")
   const firstPid = manager.get(id).pid!
-  await assert.rejects(manager.restart(id), /dừng phiên/)
+  await assert.rejects(manager.restart(id), /Stop the session/)
   await manager.stop(id)
   await manager.restart(id)
   await until(() => (output.get(id)?.match(/STARTED/g)?.length ?? 0) >= 2, 'restarted command runs')
@@ -170,12 +170,12 @@ test('restart reuses session identity, rejects live restart and remove stops its
   assert.equal(manager.workspace.sessions.length, 0)
   assert.equal(manager.workspace.layout.activeId, null)
   assert.equal(manager.workspace.layout.splitId, null)
-  assert.throws(() => manager.get(id), /Không tìm thấy/)
+  assert.throws(() => manager.get(id), /not found/)
 })
 
 test('ten simultaneous sessions in three groups retain independent I/O and all shut down', { timeout: 30_000 }, async t => {
   const workspace = freshWorkspace()
-  workspace.groups.push({ id: 'two', name: 'Dự án hai', color: '#abcdef' }, { id: 'three', name: 'Dự án ba', color: '#fedcba' })
+  workspace.groups.push({ id: 'two', name: 'Project two', color: '#abcdef' }, { id: 'three', name: 'Project three', color: '#fedcba' })
   const { manager, create, output } = fixture(t, '/bin/bash', workspace)
   const ids = Array.from({ length: 10 }, (_, i) => create(`printf 'SESSION_${i}_ONLY\\n'; sleep 120`, {
     name: `Task ${i}`, groupId: workspace.groups[i % 3].id, kind: i % 2 ? 'agent' : 'terminal'

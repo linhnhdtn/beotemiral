@@ -13,8 +13,8 @@ const session = (id: string, groupId = 'default', status: SessionStatus = 'runni
 })
 function fixture() {
   const workspace = freshWorkspace()
-  workspace.groups.push({ id: 'other', name: 'Dự án khác', color: '#667788', collapsed: true })
-  workspace.groups.push({ id: 'empty', name: 'Nhóm trống', color: '#aabbcc', collapsed: true })
+  workspace.groups.push({ id: 'other', name: 'Other project', color: '#667788', collapsed: true })
+  workspace.groups.push({ id: 'empty', name: 'Empty group', color: '#aabbcc', collapsed: true })
   workspace.sessions = [session('a'), session('x', 'other'), session('b'), session('y', 'other'), session('c')]
   workspace.layout = { view: 'terminal', groupId: 'default', activeId: 'b', splitId: 'a' }
   return workspace
@@ -25,12 +25,12 @@ test('editing every launch field preserves the running session object, PID, time
   const workspace = fixture()
   const live = workspace.sessions[2]
   const result = updateWorkspaceSession(workspace, 'b', {
-    name: 'Tác vụ đã sửa', kind: 'agent', cwd: '/tmp/thư mục mới', command: 'printf "xin chào"', groupId: 'other'
+    name: 'Edited task', kind: 'agent', cwd: '/tmp/new folder', command: 'printf "hello"', groupId: 'other'
   })
   assert.equal(result, live)
   assert.equal(workspace.sessions.find(s => s.id === 'b'), live)
   assert.deepEqual(live, {
-    id: 'b', name: 'Tác vụ đã sửa', kind: 'agent', cwd: '/tmp/thư mục mới', command: 'printf "xin chào"',
+    id: 'b', name: 'Edited task', kind: 'agent', cwd: '/tmp/new folder', command: 'printf "hello"',
     groupId: 'other', status: 'running', pid: 321, startedAt: '2026-09-25T00:00:00.000Z',
     detached: true, pendingLaunch: true
   })
@@ -51,14 +51,14 @@ test('only command or working-directory changes on live sessions require another
   }
   const workspace = fixture()
   const live = workspace.sessions[2]
-  updateWorkspaceSession(workspace, 'b', { name: 'Tên mới', kind: 'agent', groupId: 'other' })
+  updateWorkspaceSession(workspace, 'b', { name: 'New name', kind: 'agent', groupId: 'other' })
   assert.equal(live.pendingLaunch, undefined)
   updateWorkspaceSession(workspace, 'b', { cwd: live.cwd, command: live.command })
   assert.equal(live.pendingLaunch, undefined)
   updateWorkspaceSession(workspace, 'b', { command: '' })
   assert.equal(live.command, '')
   assert.equal(live.pendingLaunch, true)
-  updateWorkspaceSession(workspace, 'b', { name: 'Đổi tên lần nữa' })
+  updateWorkspaceSession(workspace, 'b', { name: 'Renamed again' })
   assert.equal(live.pendingLaunch, true)
 })
 

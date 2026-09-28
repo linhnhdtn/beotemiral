@@ -10,7 +10,7 @@ const format = isDeb ? 'DEB' : 'AppImage'
 const artifact = isDeb
   ? resolve('release/deb', `Task-Harbor-${manifest.version}-amd64.deb`)
   : resolve(manifest.build.directories.output, `Task-Harbor-${manifest.version}-x86_64.AppImage`)
-if (!existsSync(artifact)) throw new Error(`Chạy npm run ${isDeb ? 'dist:deb' : 'dist'} trước khi kiểm thử ${format}.`)
+if (!existsSync(artifact)) throw new Error(`Run npm run ${isDeb ? 'dist:deb' : 'dist'} before testing ${format}.`)
 const dataDir = mkdtempSync(join(tmpdir(), 'harbor-package-'))
 function trayItems() {
   try {
@@ -37,27 +37,26 @@ try {
   const page = await app.firstWindow()
   const errors = []
   page.on('pageerror', error => errors.push(error.message))
-  await expect(page.getByRole('heading', { name: 'Không gian làm việc', exact: true })).toBeVisible()
-  await expect(page.getByRole('tree', { name: 'Nhóm và terminal', exact: true })).toBeVisible()
-  await expect(page.getByRole('button', { name: 'Nhập / Xuất cấu hình', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible()
+  await expect(page.getByRole('tree', { name: 'Groups and terminals', exact: true })).toBeVisible()
   expect(await app.evaluate(({ app }) => app.isPackaged)).toBe(true)
   expect(await app.evaluate(({ app }) => app.getVersion())).toBe(manifest.version)
   const id = await page.evaluate(async () => {
     const state = await window.harbor.getState()
-    const id = await window.harbor.createSession({ name: 'Kiểm tra bản đóng gói', groupId: state.groups[0].id, kind: 'terminal', cwd: state.home, command: "printf '\\033[32mBản đóng gói hoạt động\\033[0m\\n'; read -r line; printf 'INPUT:%s\\n' \"$line\"" })
+    const id = await window.harbor.createSession({ name: 'Packaged build check', groupId: state.groups[0].id, kind: 'terminal', cwd: state.home, command: "printf '\\033[32mPackaged build works\\033[0m\\n'; read -r line; printf 'INPUT:%s\\n' \"$line\"" })
     await window.harbor.focusSession(id)
     return id
   })
   const snapshot = async () => (await page.evaluate(id => window.harbor.attachTerminal(id), id)).data
-  await expect.poll(snapshot).toContain('Bản đóng gói hoạt động')
+  await expect.poll(snapshot).toContain('Packaged build works')
   await expect(page.locator('.terminal-overlay')).toHaveCount(0)
-  await expect(page.getByRole('treeitem', { name: 'Kiểm tra bản đóng gói', exact: true })).toBeVisible()
-  await expect(page.getByLabel('Sửa terminal Kiểm tra bản đóng gói', { exact: true })).toBeVisible()
+  await expect(page.getByRole('treeitem', { name: 'Packaged build check', exact: true })).toBeVisible()
+  await expect(page.getByLabel('Edit terminal Packaged build check', { exact: true })).toBeVisible()
   await expect(page.locator('.terminal-tabs')).toHaveCount(0)
   await page.locator('.xterm-helper-textarea').focus()
-  await page.keyboard.insertText('đóng gói thành công')
+  await page.keyboard.insertText('packaging succeeded')
   await page.keyboard.press('Enter')
-  await expect.poll(snapshot).toContain('INPUT:đóng gói thành công')
+  await expect.poll(snapshot).toContain('INPUT:packaging succeeded')
   await expect.poll(async () => (await page.evaluate(() => window.harbor.getState())).sessions[0].status).toBe('finished')
 
   let trayVerified = false

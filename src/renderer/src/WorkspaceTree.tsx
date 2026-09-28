@@ -21,7 +21,7 @@ type DropTarget = { kind: 'group' | 'session'; id: string; position: 'before' | 
 type TreeNode = { key: string; group: Group; session?: Session }
 const groupMime = 'application/x-task-harbor-group'
 const sessionMime = 'application/x-task-harbor-session'
-const statusLabels: Record<Session['status'], string> = { starting: 'Khởi động', running: 'Đang chạy', finished: 'Hoàn thành', stopped: 'Đã dừng', error: 'Có lỗi' }
+const statusLabels: Record<Session['status'], string> = { starting: 'Starting', running: 'Running', finished: 'Finished', stopped: 'Stopped', error: 'Error' }
 
 export default function WorkspaceTree({
   state, selectedSessionId, onSelectGroup, onOpenSession, onEditGroup, onEditSession,
@@ -61,14 +61,14 @@ export default function WorkspaceTree({
     const ids = state.groups.map(item => item.id)
     ;[ids[index], ids[target]] = [ids[target], ids[index]]
     onReorderGroups(ids)
-    setAnnouncement(`Đã chuyển nhóm ${group.name} ${direction < 0 ? 'lên' : 'xuống'}.`)
+    setAnnouncement(`Moved group ${group.name} ${direction < 0 ? 'up' : 'down'}.`)
   }
   const reorderSession = (session: Session, direction: -1 | 1) => {
     const sessions = sessionsByGroup.get(session.groupId) ?? []
     const index = sessions.findIndex(item => item.id === session.id)
     if (index + direction < 0 || index + direction >= sessions.length) return
     onMoveSession(session.id, session.groupId, sessions[index + (direction < 0 ? -1 : 2)]?.id)
-    setAnnouncement(`Đã chuyển terminal ${session.name} ${direction < 0 ? 'lên' : 'xuống'}.`)
+    setAnnouncement(`Moved terminal ${session.name} ${direction < 0 ? 'up' : 'down'}.`)
   }
   const handleKeys = (event: KeyboardEvent<HTMLDivElement>) => {
     const target = event.target as HTMLElement
@@ -134,7 +134,7 @@ export default function WorkspaceTree({
       if (index >= 0) {
         ids.splice(index + (target.position === 'after' ? 1 : 0), 0, item.id)
         onReorderGroups(ids)
-        setAnnouncement('Đã thay đổi thứ tự nhóm.')
+        setAnnouncement('Group order changed.')
       }
     } else {
       const targetSession = target.kind === 'session' ? state.sessions.find(session => session.id === target.id) : undefined
@@ -144,7 +144,7 @@ export default function WorkspaceTree({
         const index = siblings.findIndex(session => session.id === targetSession?.id)
         const beforeId = target.position === 'before' ? targetSession?.id : target.position === 'after' ? siblings[index + 1]?.id : undefined
         onMoveSession(item.id, groupId, beforeId)
-        setAnnouncement(`Đã chuyển terminal vào nhóm ${state.groups.find(group => group.id === groupId)?.name ?? ''}.`)
+        setAnnouncement(`Moved terminal to group ${state.groups.find(group => group.id === groupId)?.name ?? ''}.`)
       }
     }
     endDrag()
@@ -154,18 +154,18 @@ export default function WorkspaceTree({
     if (dropTarget?.kind === kind && dropTarget.id === id) drop(event, dropTarget)
   }
   return <div className="workspace-tree">
-    <div className="group-list tree-list" role="tree" aria-label="Nhóm và terminal" onKeyDown={handleKeys} onDragEnd={endDrag} onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropTarget(null) }}>
+    <div className="group-list tree-list" role="tree" aria-label="Groups and terminals" onKeyDown={handleKeys} onDragEnd={endDrag} onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropTarget(null) }}>
       {state.groups.map(group => {
         const sessions = sessionsByGroup.get(group.id) ?? []
         const running = sessions.filter(session => session.status === 'running' || session.status === 'starting').length
         const groupKey = `group:${group.id}`
         return <div key={group.id} ref={registerNode(groupKey)} role="treeitem" aria-label={group.name} aria-expanded={!group.collapsed} aria-selected={state.layout.groupId === group.id && !selectedSessionId} tabIndex={tabKey === groupKey ? 0 : -1} data-tree-key={groupKey} className="tree-group-node" onFocus={event => { if (event.target === event.currentTarget) setFocusedKey(groupKey) }}>
           <div className={`group-row tree-group-row ${state.layout.groupId === group.id ? 'selected' : ''}${targetClass('group', group.id)}`} draggable onDragStart={event => startDrag(event, { kind: 'group', id: group.id })} onDragOver={event => dragOver(event, 'group', group.id)} onDrop={event => dropOnRow(event, 'group', group.id)}>
-            <button className="icon-button tree-toggle" aria-label={`${group.collapsed ? 'Mở' : 'Thu gọn'} nhóm ${group.name}`} title={group.collapsed ? 'Mở nhóm' : 'Thu gọn nhóm'} onClick={() => onToggleGroup(group)}>{group.collapsed ? <ChevronRight size={14}/> : <ChevronDown size={14}/>}</button>
-            <button className="nav-item tree-select" tabIndex={-1} title={`${group.name} · ${running}/${sessions.length} phiên đang chạy · Kéo để đổi vị trí`} onClick={() => onSelectGroup(group)}><span className="group-dot" style={{ '--group-color': group.color } as CSSProperties}/><span>{group.name}</span><span className="nav-count">{sessions.length}</span></button>
+            <button className="icon-button tree-toggle" aria-label={`${group.collapsed ? 'Expand' : 'Collapse'} group ${group.name}`} title={group.collapsed ? 'Expand group' : 'Collapse group'} onClick={() => onToggleGroup(group)}>{group.collapsed ? <ChevronRight size={14}/> : <ChevronDown size={14}/>}</button>
+            <button className="nav-item tree-select" tabIndex={-1} title={`${group.name} · ${running}/${sessions.length} sessions running · Drag to reorder`} onClick={() => onSelectGroup(group)}><span className="group-dot" style={{ '--group-color': group.color } as CSSProperties}/><span>{group.name}</span><span className="nav-count">{sessions.length}</span></button>
             <div className="tree-row-tools">
-              <button className="icon-button" aria-label={`Tạo terminal trong nhóm ${group.name}`} title="Tạo terminal trong nhóm" onClick={() => onCreateSession(group.id)}><Plus size={14}/></button>
-              <button className="icon-button tree-edit" aria-label={`Sửa nhóm ${group.name}`} title="Sửa nhóm (F2)" onClick={() => onEditGroup(group)}><Pencil size={13}/></button>
+              <button className="icon-button" aria-label={`New terminal in group ${group.name}`} title="New terminal in group" onClick={() => onCreateSession(group.id)}><Plus size={14}/></button>
+              <button className="icon-button tree-edit" aria-label={`Edit group ${group.name}`} title="Edit group (F2)" onClick={() => onEditGroup(group)}><Pencil size={13}/></button>
             </div>
           </div>
           {!group.collapsed && <div role="group" className="tree-sessions">
@@ -173,18 +173,18 @@ export default function WorkspaceTree({
               const sessionKey = `session:${session.id}`
               return <div key={session.id} ref={registerNode(sessionKey)} role="treeitem" aria-label={session.name} aria-selected={selectedSessionId === session.id} tabIndex={tabKey === sessionKey ? 0 : -1} data-tree-key={sessionKey} className={`tree-session-row ${selectedSessionId === session.id ? 'selected' : ''}${targetClass('session', session.id)}`} draggable onFocus={event => { if (event.target === event.currentTarget) setFocusedKey(sessionKey) }} onDragStart={event => startDrag(event, { kind: 'session', id: session.id })} onDragOver={event => dragOver(event, 'session', session.id)} onDrop={event => dropOnRow(event, 'session', session.id)}>
                 <GripVertical className="tree-grip" size={12} aria-hidden="true"/>
-                <button className="tree-select tree-session-select" tabIndex={-1} title={`${session.name}\n${session.cwd}\n${session.command || state.shell}\n${statusLabels[session.status]}${session.detached ? ' · Cửa sổ riêng' : ''}`} onClick={() => onOpenSession(session)}>
+                <button className="tree-select tree-session-select" tabIndex={-1} title={`${session.name}\n${session.cwd}\n${session.command || state.shell}\n${statusLabels[session.status]}${session.detached ? ' · Detached window' : ''}`} onClick={() => onOpenSession(session)}>
                   {session.kind === 'agent' ? <Bot className="tree-kind agent" size={15}/> : <SquareTerminal className="tree-kind" size={15}/>}
                   <span className="tree-session-text"><span>{session.name}</span></span>
-                  {session.detached && <ArrowUpRight size={12} aria-label="Cửa sổ riêng"/>}
+                  {session.detached && <ArrowUpRight size={12} aria-label="Detached window"/>}
                   <i className={`tree-status ${session.status}`} aria-label={statusLabels[session.status]} title={statusLabels[session.status]}/>
                 </button>
                 <div className="tree-row-tools">
-                  <button className="icon-button tree-edit" aria-label={`Sửa terminal ${session.name}`} title="Sửa terminal (F2)" onClick={() => onEditSession(session)}><Pencil size={13}/></button>
+                  <button className="icon-button tree-edit" aria-label={`Edit terminal ${session.name}`} title="Edit terminal (F2)" onClick={() => onEditSession(session)}><Pencil size={13}/></button>
                 </div>
               </div>
             })}
-            {sessions.length === 0 && <button className="tree-empty" onClick={() => onCreateSession(group.id)}><Plus size={12}/>Thêm terminal</button>}
+            {sessions.length === 0 && <button className="tree-empty" onClick={() => onCreateSession(group.id)}><Plus size={12}/>Add terminal</button>}
           </div>}
         </div>
       })}

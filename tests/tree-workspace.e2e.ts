@@ -33,7 +33,7 @@ test('workspace tree reorders visually, edits live terminal safely and persists 
     await app.evaluate(({ dialog }) => {
       dialog.showMessageBox = (async () => ({ response: 1, checkboxChecked: false })) as typeof dialog.showMessageBox
     })
-    await expect(page.getByRole('tree', { name: 'Nhóm và terminal' })).toBeVisible()
+    await expect(page.getByRole('tree', { name: 'Groups and terminals' })).toBeVisible()
   }
 
   async function drag(source: Locator, target: Locator, position: 'before' | 'after' | 'inside') {
@@ -80,7 +80,7 @@ test('workspace tree reorders visually, edits live terminal safely and persists 
     await expect.poll(async () => (await getState()).sessions.filter(session => session.status === 'running').length).toBe(4)
     await expect.poll(groupOrder).toEqual(['Alpha', 'Beta', 'Empty'])
     await expect.poll(() => sessionOrder('Alpha')).toEqual(['Alpha 1', 'Alpha 2', 'Alpha 3'])
-    await expect(groupNode('Empty').getByRole('button', { name: 'Thêm terminal', exact: true })).toBeVisible()
+    await expect(groupNode('Empty').getByRole('button', { name: 'Add terminal', exact: true })).toBeVisible()
     await expect(page.locator('.terminal-tabs')).toHaveCount(0)
     const before = (await getState()).sessions.map(({ id, pid, startedAt }) => ({ id, pid, startedAt }))
 
@@ -90,18 +90,18 @@ test('workspace tree reorders visually, edits live terminal safely and persists 
     const input = await pane('Alpha 1').locator('.xterm-helper-textarea').elementHandle()
     if (!input) throw new Error('Terminal input missing')
     await input.focus()
-    await page.keyboard.insertText('gõ dở trong cây')
-    await page.getByLabel('Thu gọn nhóm Alpha', { exact: true }).click()
+    await page.keyboard.insertText('typed in tree')
+    await page.getByLabel('Collapse group Alpha', { exact: true }).click()
     await expect(groupNode('Alpha')).toHaveAttribute('aria-expanded', 'false')
     await expect(sessionNode('Alpha 1')).toHaveCount(0)
     await expect(pane('Alpha 1')).toBeVisible()
     expect(await input.evaluate(node => node.isConnected)).toBe(true)
     expect((await getState()).layout.activeId).toBe(ids.a1)
-    await page.getByLabel('Mở nhóm Alpha', { exact: true }).click()
+    await page.getByLabel('Expand group Alpha', { exact: true }).click()
     await expect(sessionNode('Alpha 1')).toBeVisible()
     await input.focus()
     await page.keyboard.press('Enter')
-    await expect.poll(() => snapshot(ids.a1)).toContain('RESULT:gõ dở trong cây')
+    await expect.poll(() => snapshot(ids.a1)).toContain('RESULT:typed in tree')
 
     await drag(groupRow('Beta'), groupRow('Alpha'), 'before')
     await expect.poll(groupOrder).toEqual(['Beta', 'Alpha', 'Empty'])
@@ -126,44 +126,44 @@ test('workspace tree reorders visually, edits live terminal safely and persists 
     await page.screenshot({ path: 'test-results/workspace-tree-populated.png', omitBackground: true })
 
     // All fields can change while the original shell continues to run.
-    await page.getByLabel('Sửa terminal Alpha 1', { exact: true }).click()
-    await expect(page.getByRole('heading', { name: 'Chỉnh sửa phiên', exact: true })).toBeVisible()
+    await page.getByLabel('Edit terminal Alpha 1', { exact: true }).click()
+    await expect(page.getByRole('heading', { name: 'Edit session', exact: true })).toBeVisible()
     const modal = page.locator('.modal')
     const newCommand = "printf 'RESTARTED:%s\\n' \"$PWD\"; while IFS= read -r line; do printf 'NEW:%s\\n' \"$line\"; done"
-    await modal.getByLabel('Tên phiên', { exact: true }).fill('Agent đã sửa')
+    await modal.getByLabel('Session name', { exact: true }).fill('Edited agent')
     await modal.getByRole('button', { name: /AI agent/ }).click()
-    await modal.getByLabel('Nhóm', { exact: true }).selectOption(ids.beta)
-    await modal.getByLabel('Thư mục làm việc', { exact: true }).fill(dataDir)
-    await modal.getByLabel('Lệnh khởi chạy', { exact: true }).fill(newCommand)
-    await expect(modal.getByText('Lệnh và thư mục mới áp dụng khi bạn chạy lại phiên. Tác vụ hiện tại vẫn tiếp tục chạy.', { exact: true })).toBeVisible()
+    await modal.getByLabel('Group', { exact: true }).selectOption(ids.beta)
+    await modal.getByLabel('Working directory', { exact: true }).fill(dataDir)
+    await modal.getByLabel('Startup command', { exact: true }).fill(newCommand)
+    await expect(modal.getByText('The new command and directory apply when you restart the session. The current task keeps running.', { exact: true })).toBeVisible()
     await page.screenshot({ path: 'test-results/workspace-session-editor.png', omitBackground: true })
-    await modal.getByRole('button', { name: 'Lưu thay đổi', exact: true }).click()
+    await modal.getByRole('button', { name: 'Save changes', exact: true }).click()
     await expect(modal).toHaveCount(0)
     await expect.poll(async () => (await getState()).sessions.find(session => session.id === ids.a1)).toMatchObject({
-      name: 'Agent đã sửa', kind: 'agent', groupId: ids.beta, cwd: dataDir,
+      name: 'Edited agent', kind: 'agent', groupId: ids.beta, cwd: dataDir,
       command: newCommand, status: 'running', pid: before.find(session => session.id === ids.a1)!.pid,
       pendingLaunch: true
     })
-    await expect(pane('Agent đã sửa')).toBeVisible()
+    await expect(pane('Edited agent')).toBeVisible()
     expect(await input.evaluate(node => node.isConnected)).toBe(true)
     await input.focus()
-    await page.keyboard.insertText('sau khi sửa')
+    await page.keyboard.insertText('after edit')
     await page.keyboard.press('Enter')
-    await expect.poll(() => snapshot(ids.a1)).toContain('RESULT:sau khi sửa')
+    await expect.poll(() => snapshot(ids.a1)).toContain('RESULT:after edit')
     expect(await snapshot(ids.a1)).not.toContain('RESTARTED:')
 
-    await pane('Agent đã sửa').getByLabel('Thao tác với Agent đã sửa', { exact: true }).click()
-    await pane('Agent đã sửa').getByRole('button', { name: 'Dừng phiên', exact: true }).click()
+    await pane('Edited agent').getByLabel('Actions for Edited agent', { exact: true }).click()
+    await pane('Edited agent').getByRole('button', { name: 'Stop session', exact: true }).click()
     await expect.poll(async () => (await getState()).sessions.find(session => session.id === ids.a1)?.status).toBe('stopped')
-    await pane('Agent đã sửa').getByRole('button', { name: 'Chạy lại', exact: true }).click()
+    await pane('Edited agent').getByRole('button', { name: 'Restart', exact: true }).click()
     await expect.poll(async () => (await getState()).sessions.find(session => session.id === ids.a1)?.status).toBe('running')
     const restarted = (await getState()).sessions.find(session => session.id === ids.a1)!
     expect(restarted.pid).not.toBe(before.find(session => session.id === ids.a1)!.pid)
     expect(restarted.pendingLaunch).toBeFalsy()
     await expect.poll(() => snapshot(ids.a1)).toContain(`RESTARTED:${dataDir}`)
 
-    await page.getByLabel('Thu gọn nhóm Beta', { exact: true }).click()
-    await expect(pane('Agent đã sửa')).toBeVisible()
+    await page.getByLabel('Collapse group Beta', { exact: true }).click()
+    await expect(pane('Edited agent')).toBeVisible()
     const persisted = await getState()
     await expect.poll(() => JSON.parse(readFileSync(join(dataDir, 'workspace.json'), 'utf8')).groups.find((group: { id: string }) => group.id === ids.beta)?.collapsed).toBe(true)
     const nativeWindow = await app!.browserWindow(page)
@@ -182,13 +182,13 @@ test('workspace tree reorders visually, edits live terminal safely and persists 
     expect(restored.sessions.map(session => ({ id: session.id, groupId: session.groupId }))).toEqual(persisted.sessions.map(session => ({ id: session.id, groupId: session.groupId })))
     expect(restored.sessions.every(session => session.status === 'stopped')).toBe(true)
     await expect(groupNode('Beta')).toHaveAttribute('aria-expanded', 'false')
-    await expect(sessionNode('Agent đã sửa')).toHaveCount(0)
-    await page.getByLabel('Mở nhóm Beta', { exact: true }).click()
-    await expect.poll(() => sessionOrder('Beta')).toEqual(['Alpha 3', 'Beta 1', 'Agent đã sửa'])
-    await sessionNode('Agent đã sửa').focus()
+    await expect(sessionNode('Edited agent')).toHaveCount(0)
+    await page.getByLabel('Expand group Beta', { exact: true }).click()
+    await expect.poll(() => sessionOrder('Beta')).toEqual(['Alpha 3', 'Beta 1', 'Edited agent'])
+    await sessionNode('Edited agent').focus()
     await page.keyboard.press('F2')
-    await expect(page.locator('.modal').getByLabel('Lệnh khởi chạy', { exact: true })).toHaveValue(newCommand)
-    await expect(page.locator('.modal').getByLabel('Thư mục làm việc', { exact: true })).toHaveValue(dataDir)
+    await expect(page.locator('.modal').getByLabel('Startup command', { exact: true })).toHaveValue(newCommand)
+    await expect(page.locator('.modal').getByLabel('Working directory', { exact: true })).toHaveValue(dataDir)
     expect(errors).toEqual([])
   } finally {
     if (app) {

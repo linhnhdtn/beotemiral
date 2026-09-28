@@ -45,15 +45,15 @@ test('real PTYs, groups, detached windows, background lifetime and restore', asy
     const api = window.harbor
     const backend = await api.createGroup('Backend', '#55d6be')
     const agents = await api.createGroup('AI Agents', '#b59bf7')
-    await api.updateGroup('default', { name: 'Vận hành', color: '#eab56d' })
+    await api.updateGroup('default', { name: 'Operations', color: '#eab56d' })
     await api.reorderGroups([agents, backend, 'default'])
     const state = await api.getState()
-    const template = await api.saveTemplate({ name: 'Kiểm tra dịch vụ', command: 'sleep 120', kind: 'terminal', cwd: state.home })
+    const template = await api.saveTemplate({ name: 'Service check', command: 'sleep 120', kind: 'terminal', cwd: state.home })
     const sessions: string[] = []
     for (let i = 0; i < 10; i++) sessions.push(await api.createSession({
-      name: i === 0 ? 'Agent · rà soát checkout' : ['Build storefront', 'API development', 'Queue worker'][i % 3] + ` ${i}`,
+      name: i === 0 ? 'Agent · checkout review' : ['Build storefront', 'API development', 'Queue worker'][i % 3] + ` ${i}`,
       groupId: [agents, backend, 'default'][i % 3], kind: i % 3 === 0 ? 'agent' : 'terminal', cwd: state.home,
-      command: i === 0 ? `printf '\\033[32mXin chào Việt Nam\\033[0m\\n'; read -r answer; printf 'ANSWER:%s\\n' "$answer"; sleep 120` : `printf 'Task ${i} ready\\n'; sleep 120`
+      command: i === 0 ? `printf '\\033[32mHello café ✓\\033[0m\\n'; read -r answer; printf 'ANSWER:%s\\n' "$answer"; sleep 120` : `printf 'Task ${i} ready\\n'; sleep 120`
     }))
     return { backend, agents, template, sessions }
   })
@@ -61,12 +61,12 @@ test('real PTYs, groups, detached windows, background lifetime and restore', asy
   await page.screenshot({ path: 'test-results/overview.png', fullPage: true })
   const target = ids.sessions[0]
   await page.evaluate(async ({ id, groupId }) => {
-    await window.harbor.updateSession(id, { name: 'Agent thanh toán', groupId })
+    await window.harbor.updateSession(id, { name: 'Payment agent', groupId })
     await window.harbor.focusSession(id)
   }, { id: target, groupId: ids.backend })
-  await expect.poll(async () => (await page.evaluate(id => window.harbor.attachTerminal(id), target)).data).toContain('Xin chào Việt Nam')
-  await page.evaluate(id => window.harbor.writeTerminal(id, 'Đã kiểm tra\r'), target)
-  await expect.poll(async () => (await page.evaluate(id => window.harbor.attachTerminal(id), target)).data).toContain('ANSWER:Đã kiểm tra')
+  await expect.poll(async () => (await page.evaluate(id => window.harbor.attachTerminal(id), target)).data).toContain('Hello café ✓')
+  await page.evaluate(id => window.harbor.writeTerminal(id, 'Checked ✓\r'), target)
+  await expect.poll(async () => (await page.evaluate(id => window.harbor.attachTerminal(id), target)).data).toContain('ANSWER:Checked ✓')
   await page.evaluate(id => window.harbor.resizeTerminal(id, 92, 24), target)
   const oldPid = (await page.evaluate(() => window.harbor.getState())).sessions.find(s => s.id === target)!.pid
   const newWindow = app.waitForEvent('window')
@@ -74,7 +74,7 @@ test('real PTYs, groups, detached windows, background lifetime and restore', asy
   const detachedPage = await newWindow
   detachedPage.on('pageerror', e => errors.push(e.message))
   await detachedPage.waitForFunction(() => Boolean(window.harbor))
-  await expect.poll(async () => (await detachedPage.evaluate(id => window.harbor.attachTerminal(id), target)).data).toContain('ANSWER:Đã kiểm tra')
+  await expect.poll(async () => (await detachedPage.evaluate(id => window.harbor.attachTerminal(id), target)).data).toContain('ANSWER:Checked ✓')
   await expect(page.evaluate(async id => {
     try { await window.harbor.writeTerminal(id, 'unexpected'); return false } catch { return true }
   }, target)).resolves.toBe(true)
