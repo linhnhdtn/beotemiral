@@ -1,40 +1,40 @@
 # Task Harbor
 
-Ứng dụng desktop Linux để gom terminal, task và AI agent vào một không gian làm việc. Giao diện tiếng Việt, nền tối; terminal tương tác thật, hoạt động ngay cả khi bạn chuyển tab hoặc đóng cửa sổ chính.
+A Linux desktop app that brings terminals, tasks and AI agents together in one workspace. Dark UI; real interactive terminals that keep running when you switch tabs or close the main window.
 
-## Chạy và đóng gói
+## Run and package
 
-### Cài bằng file `.deb` (Ubuntu/Debian, x86_64)
+### Install from the `.deb` (Ubuntu/Debian, x86_64)
 
-Đóng gói bằng `npm run dist:deb`. File tạo ra là `release/deb/Task-Harbor-0.1.5-amd64.deb`; thư mục build riêng để không ghi đè bản AppImage/unpacked đang chạy.
+Build with `npm run dist:deb`. The output is `release/deb/Task-Harbor-0.1.5-amd64.deb`; it uses its own build directory so it does not overwrite a running AppImage/unpacked build.
 
 ```bash
 sudo apt install ./release/deb/Task-Harbor-0.1.5-amd64.deb
 ```
 
-Gói cài chứa ứng dụng, Electron, terminal native, icon và menu **Task Harbor**. Máy nhận không cần Node.js/npm hoặc thư mục mã nguồn. Ứng dụng được cài vào `/opt/Task Harbor`, có lệnh `task-harbor` và tự thiết lập sandbox/AppArmor bằng script chuẩn của electron-builder. Việc cài không tự mở ứng dụng. Sau khi hoàn tất các task cũ, thoát hoàn toàn rồi mở lại bản đã cài bằng `task-harbor` hoặc menu. Dữ liệu vẫn dùng `~/.config/Task Harbor`.
+The package contains the app, Electron, the native terminal module, the icon and a **Task Harbor** menu entry. The target machine does not need Node.js/npm or the source tree. The app is installed to `/opt/Task Harbor`, provides the `task-harbor` command, and configures sandbox/AppArmor with electron-builder's standard script. Installing does not launch the app. Once existing tasks are done, quit completely and reopen the installed build via `task-harbor` or the menu. Data still lives in `~/.config/Task Harbor`.
 
-Nếu từng dùng `npm run install:desktop`, shortcut cá nhân sẽ che menu của gói `.deb`. **Sau khi cài `.deb` thành công**, đổi tên hai shortcut cũ để giữ bản sao:
+If you previously used `npm run install:desktop`, the personal shortcut will shadow the `.deb` menu entry. **After the `.deb` installs successfully**, rename the two old shortcuts to keep a backup:
 
 ```bash
 mv ~/.local/share/applications/dev.taskharbor.desktop ~/.local/share/applications/dev.taskharbor.desktop.bak
 mv "$(xdg-user-dir DESKTOP)/Task Harbor.desktop" "$(xdg-user-dir DESKTOP)/Task Harbor.desktop.bak"
 ```
 
-Sau đó mở từ menu ứng dụng; có thể ghim lại vào dock. Bỏ qua bước đổi tên nếu không có shortcut cũ. Cập nhật bằng cách cài file `.deb` phiên bản mới; gỡ bằng `sudo apt remove task-harbor` (giữ dữ liệu cá nhân).
+Then open it from the application menu; you can pin it to the dock. Skip the rename step if you have no old shortcuts. Update by installing a newer `.deb`; uninstall with `sudo apt remove task-harbor` (personal data is kept).
 
-### Chạy từ mã nguồn / AppImage
+### Run from source / AppImage
 
-Cần Node.js 22.12 trở lên, npm, Linux có giao diện đồ họa, shell tương thích Bash/Zsh và bộ công cụ biên dịch C/C++ cùng Python 3 để xây `node-pty`. Electron cần các thư viện hệ thống GTK, NSS, ALSA và GBM; máy Linux desktop thường đã có chúng.
+Requires Node.js 22.12+, npm, a graphical Linux session, a Bash/Zsh-compatible shell, and a C/C++ toolchain plus Python 3 to build `node-pty`. Electron needs the GTK, NSS, ALSA and GBM system libraries; desktop Linux usually has them.
 
 ```bash
 npm install
 npm run dev
 ```
 
-`dev` và `start` kiểm tra và tải bộ chạy Electron nếu còn thiếu; lần tải đầu cần kết nối mạng. Dev server dùng cổng `5187`.
+`dev` and `start` check for and download the Electron binary if missing; the first download needs network access. The dev server uses port `5187`.
 
-`postinstall` tự xây lại `node-pty` theo phiên bản Electron. Nếu đổi Electron hoặc gặp lỗi native module ABI, chạy `npm run postinstall`.
+`postinstall` rebuilds `node-pty` for the installed Electron version. If you change Electron or hit a native module ABI error, run `npm run postinstall`.
 
 ```bash
 npm run build
@@ -42,95 +42,89 @@ npm start
 npm run dist
 ```
 
-AppImage nằm tại `release/0.1.5/Task-Harbor-0.1.5-x86_64.AppImage`:
+The AppImage is at `release/0.1.5/Task-Harbor-0.1.5-x86_64.AppImage`:
 
 ```bash
 chmod +x release/0.1.5/Task-Harbor-0.1.5-x86_64.AppImage
 ./release/0.1.5/Task-Harbor-0.1.5-x86_64.AppImage
 ```
 
-AppImage dùng FUSE 2. Trên máy Ubuntu hiện tại thiếu FUSE, Chromium bị chặn user namespace và chưa có SUID sandbox hợp lệ. Có thể chạy bản phát triển với `npm run dev -- --noSandbox`, bản build với `npm start -- --noSandbox`, hoặc dùng thư mục đóng gói sẵn không cần FUSE:
+AppImage requires FUSE 2. On the current Ubuntu machine FUSE is missing, Chromium user namespaces are blocked and there is no valid SUID sandbox. You can run the dev build with `npm run dev -- --noSandbox`, the production build with `npm start -- --noSandbox`, or use the unpacked directory, which does not need FUSE:
 
 ```bash
 ./release/0.1.5/linux-unpacked/task-harbor --no-sandbox
 ```
 
-Nếu chỉ có AppImage, chuyển vào thư mục bạn muốn giải nén, chạy `/đường/dẫn/Task-Harbor-0.1.5-x86_64.AppImage --appimage-extract`, sau đó mở `./squashfs-root/AppRun --no-sandbox`. Runtime AppImage đi kèm không hỗ trợ `--appimage-extract-and-run`.
+If you only have the AppImage, `cd` to where you want it extracted, run `/path/to/Task-Harbor-0.1.5-x86_64.AppImage --appimage-extract`, then open `./squashfs-root/AppRun --no-sandbox`. The bundled AppImage runtime does not support `--appimage-extract-and-run`.
 
-`--no-sandbox` chỉ là cách chạy tùy chọn cho môi trường này, làm tắt sandbox Chromium. Mặc định ứng dụng vẫn bật sandbox; preload cô lập và renderer không có quyền Node.js trực tiếp.
+`--no-sandbox` is only an opt-in workaround for this environment and disables the Chromium sandbox. By default the app keeps the sandbox on; the preload is isolated and the renderer has no direct Node.js access.
 
-## Sử dụng
+## Usage
 
-Để thêm biểu tượng trên desktop và mục **Task Harbor** trong menu ứng dụng:
+To add a desktop icon and a **Task Harbor** entry in the application menu:
 
 ```bash
 npm run install:desktop -- --no-sandbox
 ```
 
-Lệnh trên phù hợp với máy Ubuntu hiện tại và không tự mở ứng dụng. Máy hỗ trợ sandbox Chromium có thể bỏ `-- --no-sandbox`. Sau đó nhấn **Super**, tìm **Task Harbor** và bấm mở, hoặc bấm đúp biểu tượng trên desktop. Muốn ghim vào dock, bấm chuột phải biểu tượng trong menu và chọn **Add to Favorites / Thêm vào yêu thích**.
+This suits the current Ubuntu machine and does not launch the app. Machines that support the Chromium sandbox can drop `-- --no-sandbox`. Then press **Super**, search for **Task Harbor** and open it, or double-click the desktop icon. To pin it to the dock, right-click the icon in the menu and choose **Add to Favorites**.
 
-Bản 0.1.5 được đóng gói riêng để không ghi đè ứng dụng đang chạy. Sau khi cập nhật shortcut, hãy tự thoát hoàn toàn và mở lại khi các task hiện tại đã xong để nhận phiên bản mới.
+Version 0.1.5 is packaged separately so it does not overwrite the running app. After updating the shortcut, quit completely and reopen once current tasks are finished to get the new version.
 
-Shortcut trỏ tới `release/0.1.5/linux-unpacked/task-harbor`; giữ nguyên thư mục dự án. Nếu chuyển dự án sang vị trí khác, chạy lại lệnh cài shortcut.
+The shortcut points to `release/0.1.5/linux-unpacked/task-harbor`; keep the project directory in place. If you move the project, rerun the shortcut install command.
 
-- Tạo nhóm, đặt tên/màu và sắp xếp thứ tự trong thanh bên. Mỗi nhóm có bộ đếm phiên; trạng thái đang chạy hiển thị ở từng terminal. Khi xóa nhóm có phiên, chọn nhóm nhận để giữ nguyên tiến trình; nếu xóa nhóm cuối, ứng dụng tạo lại “Không gian chung”.
-- Tạo terminal với tên task và thư mục làm việc; để trống lệnh để mở shell, hoặc nhập lệnh cần chạy. Chọn loại **AI agent** để nhận diện các CLI agent đã cài và đăng nhập trên máy.
-- Lưu mẫu lệnh để mở lại nhanh; nút bút chì ở mỗi terminal mở đầy đủ tên, loại phiên, nhóm, thư mục và lệnh khởi chạy. Nếu phiên đang chạy, thư mục/lệnh mới được lưu cho lần chạy tiếp theo; ứng dụng không tự dừng task hiện tại.
-- Chọn một phiên từ tổng quan để mở terminal; dùng cây nhóm/terminal bên trái hoặc chia đôi màn hình để làm việc cùng lúc với hai phiên. Trong lúc ứng dụng đang mở, mỗi nhóm nhớ terminal và khung chia đôi gần nhất: chuyển nhóm rồi quay lại sẽ mở đúng phiên, giữ lệnh đang gõ và tiến trình đang chạy. Nhóm chưa từng mở chọn phiên đầu tiên; nhóm trống hiện tổng quan. Nút **Dashboard** mở danh sách tổng quan.
-- **Tách cửa sổ** giữ nguyên tiến trình và màn hình terminal. Đóng cửa sổ riêng đưa phiên về cửa sổ chính.
-- Đóng cửa sổ chính giữ các task chạy nền. Mở lại từ tray hoặc chạy ứng dụng lần nữa; chỉ một bản ứng dụng quản lý workspace.
-- Nếu desktop không có tray, chạy lại ứng dụng để hiện cửa sổ cũ. Có thể kiểm tra chế độ này bằng `TASK_HARBOR_NO_TRAY=1 npm start`.
-- Nút nguồn ở thanh bên hoặc menu tray **Thoát hoàn toàn** dừng các phiên cùng tiến trình con; ứng dụng hỏi xác nhận nếu còn phiên chạy. **Dừng phiên** cũng hỏi xác nhận trước khi kết thúc task.
+- Create groups, set their name/color and reorder them in the sidebar. Each group shows a session count; running status is shown per terminal. When deleting a group that has sessions, choose a receiving group to keep processes intact; deleting the last group recreates “General”.
+- Create a terminal with a task name and working directory; leave the command empty for a shell, or enter a command to run. Choose the **AI agent** type to mark CLI agents installed and logged in on this machine.
+- Save command templates for quick reuse; the pencil button on each terminal opens its full name, session type, group, directory and startup command. If the session is running, the new directory/command is saved for the next run; the app does not stop the current task.
+- Pick a session from the overview to open its terminal; use the group/terminal tree on the left or split the screen to work with two sessions at once. While the app is open, each group remembers its last terminal and split pane: switching groups and coming back reopens the same session, keeping half-typed input and running processes. A group never opened before selects its first session; an empty group shows the overview. The **Dashboard** button opens the overview list.
+- **Open in separate window** keeps the process and terminal screen intact. Closing the separate window returns the session to the main window.
+- Closing the main window keeps tasks running in the background. Reopen from the tray or launch the app again; only one app instance manages the workspace.
+- If the desktop has no tray, launch the app again to bring back the existing window. Test this mode with `TASK_HARBOR_NO_TRAY=1 npm start`.
+- The power button in the sidebar or the tray's **Quit completely** stops all sessions and their child processes; the app asks for confirmation if sessions are still running. **Stop session** also asks before ending a task.
 
-| Phím tắt | Thao tác |
+| Shortcut | Action |
 | --- | --- |
-| `Ctrl+Shift+T` | Tạo terminal |
-| `Ctrl+Shift+P` | Tìm và chuyển đến phiên |
-| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Phiên tiếp theo / trước |
-| `↑` / `↓`, `←` / `→` trong cây | Chọn mục, thu/mở nhóm |
-| `Alt+↑` / `Alt+↓` trong cây | Di chuyển nhóm hoặc terminal |
-| `F2` trong cây | Sửa nhóm hoặc terminal |
-| `Ctrl+Shift+C` / `Ctrl+Shift+V` | Sao chép vùng chọn / dán terminal |
-| `Ctrl+C` | Gửi ngắt đến lệnh trong terminal |
-| `Ctrl+Shift+Q` | Thoát hoàn toàn |
+| `Ctrl+Shift+T` | New terminal |
+| `Ctrl+Shift+P` | Find and jump to a session |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous session |
+| `↑` / `↓`, `←` / `→` in the tree | Select item, collapse/expand group |
+| `Alt+↑` / `Alt+↓` in the tree | Move group or terminal |
+| `F2` in the tree | Edit group or terminal |
+| `Ctrl+Shift+C` / `Ctrl+Shift+V` | Copy selection / paste into terminal |
+| `Ctrl+C` | Send interrupt to the terminal command |
+| `Ctrl+Shift+Q` | Quit completely |
 
-Trạng thái có biểu tượng và chữ: đang khởi động, đang chạy, đã kết thúc, đã dừng hoặc lỗi. Phiên chạy lệnh theo vòng đời lệnh và có exit code; shell tương tác theo vòng đời shell. Nhãn AI agent không suy đoán tiến độ hay trạng thái chờ trả lời của agent. Bản này chưa nhập các terminal đã mở bên ngoài hoặc tự điều phối agent.
+Status is shown with both icon and text: starting, running, finished, stopped or error. Command sessions follow the command's lifecycle and report an exit code; interactive shells follow the shell's lifecycle. The AI agent label does not guess an agent's progress or whether it is waiting for input. This version does not adopt terminals opened outside the app or orchestrate agents.
 
-## Cây nhóm và chỉnh sửa terminal
+## Group tree and terminal editing
 
-Thanh bên hiển thị nhóm ở cấp đầu, terminal/AI agent nằm bên dưới. Bấm mũi tên để thu gọn hoặc mở nhóm; terminal đang hiển thị và tiến trình vẫn giữ nguyên. Trạng thái thu/mở và thứ tự được lưu khi khởi động lại.
+The sidebar shows groups at the top level with terminals/AI agents beneath. Click the arrow to collapse or expand a group; the visible terminal and its processes are unaffected. Collapse state and order persist across restarts.
 
-Kéo nhóm lên/xuống để sắp xếp. Kéo terminal vào nhóm nhận hoặc trước/sau một terminal khác; vạch sáng chỉ vị trí sẽ chèn. Các nút mũi tên xuất hiện ngay trên dòng đang trỏ/chọn, giúp đổi thứ tự mà vẫn nhìn thấy danh sách. Nút bút chì sửa phiên, nút **+** tạo terminal trong nhóm.
+Drag groups up/down to reorder. Drag a terminal onto a group, or before/after another terminal; a highlight line marks the drop position. Arrow buttons appear on the hovered/selected row so you can reorder while keeping the list in view. The pencil button edits a session; the **+** button creates a terminal in that group.
 
-## Nhập / Xuất cấu hình
+## Performance with many sessions
 
-Mở **Nhập / Xuất cấu hình** ở thanh bên. **Xuất cấu hình** lưu nhóm, thông tin khởi chạy và mẫu lệnh thành JSON. **Chọn file JSON** nhận file đã xuất hoặc `workspace.json` của bản cũ; xem trước nhóm, tên phiên, thư mục và lệnh rồi bấm **Nhập cấu hình**.
+All terminals share a single process scan every 300 ms. When stopping a session the app still performs a fresh scan to find child processes and verify PID identity; stopping one session does not affect others. The watch list also drops child processes that have exited.
 
-Import thêm các nhóm và phiên với ID mới, giữ nguyên dữ liệu và task hiện có. Các phiên nhập vào ở trạng thái dừng; chọn phiên rồi **Chạy lại** để bắt đầu. Không nhập PID, trạng thái chạy hay lịch sử đầu ra từ file. Giới hạn mỗi file: 5 MB, 200 nhóm, 2.000 phiên và 500 mẫu lệnh. Chức năng này nhập cấu hình đã lưu, chưa tiếp quản terminal đang mở trong ứng dụng khác.
+Re-measure with `npm run benchmark:sessions -- 20`. It runs 20 test terminals in a temp directory using Electron's Node runtime, without opening windows or touching your personal workspace. A 6-second run on the dev machine showed scans drop from 400 to 20 and manager-process CPU drop from 38.03% to 5.58%. This measures idle terminals only, excluding the renderer and the CPU of commands/agents; results vary by machine and system load.
 
-## Hiệu năng khi chạy nhiều phiên
+## Transparent background
 
-Các terminal dùng chung một lần quét tiến trình mỗi 300 ms. Khi dừng phiên, ứng dụng vẫn quét mới để tìm tiến trình con và kiểm tra danh tính PID; dừng phiên này không ảnh hưởng phiên khác. Danh sách theo dõi cũng loại bỏ các tiến trình con đã kết thúc.
+Click **Appearance** next to **New terminal** in the left sidebar and drag **Background transparency** between 0–100%. Terminals use a black `#080808` background, defaulting to **0% transparent** (solid) for readability. **Default 0%** restores the initial value. Only the background changes; text, cursor and terminal content stay sharp.
 
-Đo lại bằng `npm run benchmark:sessions -- 20`. Lệnh này chạy 20 terminal thử nghiệm trong thư mục tạm bằng runtime Node của Electron, không mở cửa sổ hoặc dùng workspace cá nhân. Phép đo 6 giây trên máy phát triển ghi nhận số lần quét giảm từ 400 xuống 20; CPU tiến trình quản lý từ 38,03% xuống 5,58%. Đây là phép đo terminal nhàn rỗi, không bao gồm renderer và CPU của lệnh/agent; kết quả thay đổi theo máy và tải hệ thống.
+The chosen level is saved with the workspace and applies to both the main window and detached terminals. Changes take effect immediately without restarting terminals or running commands. Workspaces without appearance settings default to 0%; customized values are preserved.
 
-## Nền trong suốt
+## Data storage and recovery
 
-Bấm nút **Giao diện** cạnh **Terminal mới** ở thanh bên trái, kéo **Độ trong suốt nền** từ 0–100%. Terminal dùng nền đen `#080808`, mặc định **0% trong suốt** (nền đặc) để dễ đọc. Nút **Mặc định 0%** đưa về mức ban đầu. Chỉ nền thay đổi; chữ, con trỏ và nội dung terminal vẫn giữ nguyên độ rõ.
+Groups, templates, session info and layout are stored in `workspace.json` in Electron's `userData` directory, by default `$XDG_CONFIG_HOME/Task Harbor` or `~/.config/Task Harbor`. Set a custom directory with `TASK_HARBOR_DATA_DIR=/absolute/path`.
 
-Mức đã chọn được lưu cùng workspace, áp dụng cho cả cửa sổ chính và terminal tách riêng. Thay đổi có hiệu lực ngay, không khởi động lại terminal hoặc lệnh đang chạy. Workspace chưa có cài đặt giao diện nhận mặc định 0%; mức đã tùy chỉnh vẫn được giữ nguyên.
+The file is written via a temp file and then renamed, with `0600` permissions. If the configuration is corrupt or invalid, the app keeps the old file as `workspace.json.corrupt-<timestamp>` and shows a warning. To recover manually, quit completely first, back up the data directory, then fix/replace `workspace.json` with a valid copy.
 
-## Lưu dữ liệu và khôi phục
+After a restart, sessions that were running are marked stopped; commands only run when you explicitly restart them. Terminal output lives in memory, capped at about 5,000 scrollback lines per session, and is not kept after the app quits. Tasks are not guaranteed to survive an app crash, a forced kill or a machine reboot. Commands and paths in the configuration are stored as plain text; do not put passwords directly in command templates.
 
-Nhóm, mẫu, thông tin phiên và bố cục lưu trong `workspace.json` ở thư mục Electron `userData`, mặc định `$XDG_CONFIG_HOME/Task Harbor` hoặc `~/.config/Task Harbor`. Có thể đặt thư mục riêng bằng `TASK_HARBOR_DATA_DIR=/đường/dẫn/tuyệt/đối`.
+## Architecture and testing
 
-Tệp được ghi qua tệp tạm rồi đổi tên, với quyền tệp `0600`. Nếu cấu hình hỏng hoặc không hợp lệ, ứng dụng giữ bản cũ thành `workspace.json.corrupt-<timestamp>` và hiển thị cảnh báo. Khi khôi phục thủ công, thoát hoàn toàn trước, sao lưu thư mục dữ liệu, rồi sửa/thay `workspace.json` bằng bản hợp lệ.
-
-Sau khi khởi động lại, phiên trước đó đang chạy được đánh dấu đã dừng; lệnh chỉ chạy khi bạn chủ động chạy lại. Đầu ra terminal nằm trong bộ nhớ, giới hạn khoảng 5.000 dòng cuộn mỗi phiên, và không lưu qua lần thoát ứng dụng. Không bảo đảm task tiếp tục sau khi app crash, bị buộc dừng hoặc máy khởi động lại. Lệnh và đường dẫn trong cấu hình được lưu dạng văn bản; không đặt mật khẩu trực tiếp trong mẫu lệnh.
-
-## Kiến trúc và kiểm thử
-
-Electron main quản lý PTY (`node-pty`), cây tiến trình Linux, workspace và cửa sổ. React chỉ giao tiếp qua API preload có kiểu dữ liệu và IPC được kiểm tra đầu vào. `xterm.js` hiển thị terminal; `@xterm/headless` giữ trạng thái ANSI và lịch sử để chuyển phiên, chia đôi hay tách cửa sổ mà không khởi động lại task. Mỗi snapshot có số thứ tự để renderer ghép đúng với luồng đầu ra tiếp theo.
+The Electron main process manages PTYs (`node-pty`), the Linux process tree, the workspace and windows. React talks only through a typed preload API, and IPC input is validated. `xterm.js` renders terminals; `@xterm/headless` keeps ANSI state and history so sessions can be switched, split or detached without restarting the task. Each snapshot carries a sequence number so the renderer stitches it correctly onto the subsequent output stream.
 
 ```bash
 npm run typecheck
@@ -141,10 +135,10 @@ npm run dist
 npm run test:packaged
 ```
 
-Các kiểm thử lưu trữ dùng Node test runner, bao gồm chỉnh sửa/sắp xếp phiên, lưu trạng thái cây, kiểm tra và nhập/xuất cấu hình. Playwright kiểm tra kéo thả bằng chuột, phím tắt cây, sửa phiên đang chạy và dùng cấu hình mới khi chạy lại, giữ nguyên PID khi thu/mở nhóm, xem trước import, không tự chạy lệnh và xuất/nhập lại file. Kiểm thử phiên chạy PTY thật dưới Node runtime của Electron để đúng native ABI: Unicode, màu ANSI, `Ctrl+C`, resize, lịch sử giới hạn, mã thoát, thư mục/shell lỗi, dừng tiến trình con, chạy lại/xóa, khôi phục không tự chạy và mười phiên trong ba nhóm. Kiểm thử giao diện dùng Playwright khởi chạy Electron; cần màn hình desktop hoặc `xvfb-run -a npm run test:e2e` trong CI.
+Storage tests use the Node test runner and cover editing/reordering sessions, persisting tree state and config validation. Playwright covers mouse drag-and-drop, tree keyboard shortcuts, editing a running session and applying the new config on restart, and PID preservation when collapsing/expanding groups. Session tests run real PTYs under Electron's Node runtime to match the native ABI: Unicode, ANSI colors, `Ctrl+C`, resize, bounded history, exit codes, bad directory/shell, child-process termination, restart/delete, restore without auto-run, and ten sessions across three groups. UI tests use Playwright to launch Electron; they need a desktop display, or `xvfb-run -a npm run test:e2e` in CI.
 
-`test:packaged` giải nén AppImage vào thư mục tạm, kiểm tra PTY, nhập tiếng Việt, thoát và mở lại từ tray nếu desktop có StatusNotifierWatcher. Các bài kiểm thử Electron dùng `--no-sandbox` để tương thích với máy kiểm thử hiện tại; mã sản phẩm không tự tắt sandbox.
+`test:packaged` extracts the AppImage to a temp directory and checks the PTY, Unicode input, and quitting and reopening from the tray if the desktop has a StatusNotifierWatcher. Electron tests use `--no-sandbox` for compatibility with the current test machine; product code never disables the sandbox on its own.
 
-`npm run test:deb` thực hiện cùng kiểm thử trên file `.deb` đã giải nén, không cài gói vào hệ thống. Dùng `TASK_HARBOR_NO_TRAY=1 xvfb-run -a npm run test:deb` để chạy trong màn hình ảo, tránh mở cửa sổ trên desktop đang làm việc.
+`npm run test:deb` runs the same checks against the extracted `.deb` without installing it. Use `TASK_HARBOR_NO_TRAY=1 xvfb-run -a npm run test:deb` to run in a virtual display and avoid opening windows on your working desktop.
 
-Các lệnh người dùng chạy có quyền của tài khoản Linux hiện tại. Ứng dụng hoạt động cục bộ, không yêu cầu máy chủ hoặc tài khoản riêng.
+Commands you run have the permissions of the current Linux user. The app works entirely locally and needs no server or account.

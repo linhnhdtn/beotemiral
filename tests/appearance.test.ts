@@ -15,10 +15,10 @@ function fixture(t: { after(fn: () => void): void }) {
 test('legacy workspaces gain an opaque background without losing saved work', t => {
   const { dir, file } = fixture(t)
   const { appearance: _appearance, ...legacy } = freshWorkspace()
-  legacy.groups.unshift({ id: 'backend', name: 'Máy chủ', color: '#abcdef' })
-  legacy.templates.push({ id: 'agent', name: 'Lập trình viên', kind: 'agent', cwd: '/tmp', command: 'codex --help' })
+  legacy.groups.unshift({ id: 'backend', name: 'Server', color: '#abcdef' })
+  legacy.templates.push({ id: 'agent', name: 'Developer', kind: 'agent', cwd: '/tmp', command: 'codex --help' })
   const running: Session = {
-    id: 'terminal', name: 'Terminal đang chạy', kind: 'terminal', cwd: '/tmp',
+    id: 'terminal', name: 'Running terminal', kind: 'terminal', cwd: '/tmp',
     command: 'printf ready; read -r answer', groupId: 'backend',
     status: 'running', startedAt: '2026-09-24T01:00:00.000Z', pid: 123456, detached: true
   }

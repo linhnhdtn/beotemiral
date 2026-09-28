@@ -5,7 +5,7 @@ import { removeWorkspaceGroup } from '../src/main/groups'
 
 test('deleting a group moves every session and keeps live identity, status and layout', () => {
   const workspace = freshWorkspace()
-  workspace.groups.push({ id: 'other', name: 'Dự án', color: '#55d6be' })
+  workspace.groups.push({ id: 'other', name: 'Project', color: '#55d6be' })
   workspace.sessions.push({ id: 'live', name: 'Agent', groupId: 'default', kind: 'agent', cwd: '/tmp', command: 'sleep 60', pid: 123, status: 'running', startedAt: 'now', detached: true })
   const live = workspace.sessions[0]
   workspace.layout = { view: 'terminal', groupId: 'default', activeId: 'live', splitId: null }
@@ -19,11 +19,11 @@ test('deleting a group moves every session and keeps live identity, status and l
 
 test('deleting the last group creates a usable common group', () => {
   const workspace = freshWorkspace()
-  workspace.groups[0].name = 'Nhóm muốn xóa'
+  workspace.groups[0].name = 'Group to delete'
   removeWorkspaceGroup(workspace, 'default')
   assert.equal(workspace.groups.length, 1)
   assert.notEqual(workspace.groups[0].id, 'default')
-  assert.equal(workspace.groups[0].name, 'Không gian chung')
+  assert.equal(workspace.groups[0].name, 'General')
 })
 
 test('invalid or self-target deletion leaves the workspace unchanged', () => {

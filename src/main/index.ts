@@ -33,7 +33,7 @@ function state(): AppState {
 function save(): void {
   if (saveTimer) clearTimeout(saveTimer)
   try { store.save(manager.workspace) } catch (error) {
-    warning = `Chưa lưu được cấu hình: ${String(error)}`
+    warning = `Could not save configuration: ${String(error)}`
     broadcast()
   }
 }
@@ -57,12 +57,12 @@ function showMain(): void {
 function updateTray(): void {
   if (!tray || tray.isDestroyed()) return
   const count = manager.workspace.sessions.filter(isLive).length
-  tray.setToolTip(`Task Harbor · ${count} phiên đang chạy`)
+  tray.setToolTip(`Task Harbor · ${count} sessions running`)
   tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Mở Task Harbor', click: showMain },
-    { label: `${count} phiên đang chạy`, enabled: false },
+    { label: 'Open Task Harbor', click: showMain },
+    { label: `${count} sessions running`, enabled: false },
     { type: 'separator' },
-    { label: 'Thoát hoàn toàn', click: () => { void requestQuit() } }
+    { label: 'Quit completely', click: () => { void requestQuit() } }
   ]))
 }
 function createWindow(sessionId?: string): BrowserWindow {
@@ -111,7 +111,7 @@ function createWindow(sessionId?: string): BrowserWindow {
 async function confirm(window: BrowserWindow | null, message: string, detail: string, action: string): Promise<boolean> {
   const options: Electron.MessageBoxOptions = {
     type: 'question', title: 'Task Harbor', message, detail,
-    buttons: ['Hủy', action], defaultId: 0, cancelId: 0, noLink: true
+    buttons: ['Cancel', action], defaultId: 0, cancelId: 0, noLink: true
   }
   const result = window ? await dialog.showMessageBox(window, options) : await dialog.showMessageBox(options)
   return result.response === 1
@@ -121,35 +121,35 @@ async function requestQuit(): Promise<void> {
   quitPending = true
   try {
     const count = manager.workspace.sessions.filter(isLive).length
-    if (count && !await confirm(mainWindow ?? null, `Dừng ${count} phiên và thoát?`, 'Các lệnh đang chạy sẽ kết thúc. Nhóm, mẫu lệnh và bố cục sẽ được lưu.', 'Dừng và thoát')) return
+    if (count && !await confirm(mainWindow ?? null, `Stop ${count} sessions and quit?`, 'Running commands will be terminated. Groups, command templates and layout will be saved.', 'Stop and quit')) return
     await manager.shutdown()
     save()
     quitting = true
     app.quit()
-  } catch (error) { warning = `Không thể thoát: ${String(error)}`; broadcast(); showMain() }
+  } catch (error) { warning = `Could not quit: ${String(error)}`; broadcast(); showMain() }
   finally { quitPending = false }
 }
 
 function registerIPC(): void {
   function handle(channel: string, fn: (event: Electron.IpcMainInvokeEvent, ...args: any[]) => unknown): void {
     ipcMain.handle(`harbor:${channel}`, (event, ...args) => {
-      if (quitPending && channel !== 'state') throw new Error('Ứng dụng đang chuẩn bị thoát.')
-      if (!windowIds.has(event.sender.id) || !event.senderFrame || event.senderFrame !== event.sender.mainFrame) throw new Error('Nguồn yêu cầu không hợp lệ.')
+      if (quitPending && channel !== 'state') throw new Error('The app is shutting down.')
+      if (!windowIds.has(event.sender.id) || !event.senderFrame || event.senderFrame !== event.sender.mainFrame) throw new Error('Invalid request source.')
       const source = new URL(event.senderFrame.url)
       const valid = !app.isPackaged && process.env.ELECTRON_RENDERER_URL
         ? source.origin === new URL(process.env.ELECTRON_RENDERER_URL).origin
         : source.protocol === 'file:' && decodeURIComponent(source.pathname) === join(__dirname, '../renderer/index.html')
-      if (!valid) throw new Error('Nguồn yêu cầu không hợp lệ.')
+      if (!valid) throw new Error('Invalid request source.')
       return fn(event, ...args)
     })
   }
   function owner(event: Electron.IpcMainInvokeEvent, id: string): void {
     manager.get(id)
     const window = detached.get(id) ?? mainWindow
-    if (window?.webContents.id !== event.sender.id) throw new Error('Phiên đang được mở ở cửa sổ khác.')
+    if (window?.webContents.id !== event.sender.id) throw new Error('The session is open in another window.')
   }
   function group(id: string): void {
-    if (!manager.workspace.groups.some(g => g.id === id)) throw new Error('Nhóm không tồn tại.')
+    if (!manager.workspace.groups.some(g => g.id === id)) throw new Error('Group does not exist.')
   }
   handle('state', () => state())
   handle('create-session', (_e, input) => {
@@ -170,7 +170,7 @@ function registerIPC(): void {
   handle('stop-session', async (event, id) => {
     const session = manager.get(idSchema.parse(id))
     if (!isLive(session)) return true
-    if (!await confirm(BrowserWindow.fromWebContents(event.sender), `Dừng “${session.name}”?`, 'Lệnh đang chạy và các tiến trình con của phiên sẽ kết thúc.', 'Dừng phiên')) return false
+    if (!await confirm(BrowserWindow.fromWebContents(event.sender), `Stop “${session.name}”?`, 'The running command and its child processes will be terminated.', 'Stop session')) return false
     await manager.stop(id)
     return true
   })
@@ -179,9 +179,9 @@ function registerIPC(): void {
     const session = manager.get(idSchema.parse(id))
     const live = isLive(session)
     // The editor confirms in-app; other callers still get the native prompt.
-    if (confirmed !== true && !await confirm(BrowserWindow.fromWebContents(event.sender), `Xóa “${session.name}”?`,
-      live ? 'Phiên và lịch sử màn hình sẽ bị xóa. Lệnh đang chạy và các tiến trình con sẽ được dừng.' : 'Phiên và lịch sử màn hình sẽ bị xóa. Không thể hoàn tác thao tác này.',
-      live ? 'Dừng và xóa' : 'Xóa phiên')) return false
+    if (confirmed !== true && !await confirm(BrowserWindow.fromWebContents(event.sender), `Delete “${session.name}”?`,
+      live ? 'The session and its screen history will be deleted. The running command and its child processes will be stopped.' : 'The session and its screen history will be deleted. This cannot be undone.',
+      live ? 'Stop and delete' : 'Delete session')) return false
     detached.get(id)?.close()
     await manager.remove(id)
     return true
@@ -249,7 +249,7 @@ function registerIPC(): void {
   handle('reorder-groups', (_e, input) => {
     const ids = z.array(idSchema).parse(input)
     const groups = manager.workspace.groups
-    if (ids.length !== groups.length || new Set(ids).size !== groups.length || ids.some(id => !groups.some(g => g.id === id))) throw new Error('Thứ tự nhóm không hợp lệ.')
+    if (ids.length !== groups.length || new Set(ids).size !== groups.length || ids.some(id => !groups.some(g => g.id === id))) throw new Error('Invalid group order.')
     manager.workspace.groups = ids.map(id => groups.find(g => g.id === id)!)
     changed()
   })
@@ -284,7 +284,7 @@ function registerIPC(): void {
     changed()
   })
   handle('choose-directory', async event => {
-    const result = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender)!, { title: 'Chọn thư mục làm việc', properties: ['openDirectory'], defaultPath: homedir() })
+    const result = await dialog.showOpenDialog(BrowserWindow.fromWebContents(event.sender)!, { title: 'Choose working directory', properties: ['openDirectory'], defaultPath: homedir() })
     return result.canceled ? null : result.filePaths[0]
   })
   handle('read-clipboard', () => clipboard.readText())
@@ -312,10 +312,10 @@ if (hasLock) void app.whenReady().then(() => {
   registerIPC()
   Menu.setApplicationMenu(Menu.buildFromTemplate([
     { label: 'Task Harbor', submenu: [
-      { label: 'Hiện cửa sổ chính', click: showMain },
-      { label: 'Thoát hoàn toàn', accelerator: 'Ctrl+Shift+Q', click: () => { void requestQuit() } }
+      { label: 'Show main window', click: showMain },
+      { label: 'Quit completely', accelerator: 'Ctrl+Shift+Q', click: () => { void requestQuit() } }
     ] },
-    { label: 'Hiển thị', submenu: [{ role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { role: 'togglefullscreen' }] }
+    { label: 'View', submenu: [{ role: 'resetZoom' }, { role: 'zoomIn' }, { role: 'zoomOut' }, { role: 'togglefullscreen' }] }
   ]))
   try {
     if (process.env.TASK_HARBOR_NO_TRAY !== '1') {
@@ -324,7 +324,7 @@ if (hasLock) void app.whenReady().then(() => {
       tray.on('click', showMain)
       updateTray()
     }
-  } catch { warning = 'Khay hệ thống không khả dụng. Mở Task Harbor lần nữa để quay lại các phiên đang chạy.' }
+  } catch { warning = 'System tray unavailable. Launch Task Harbor again to return to running sessions.' }
   mainWindow = createWindow()
   for (const signal of ['SIGTERM', 'SIGINT'] as const) process.once(signal, () => {
     void manager.shutdown().finally(() => { save(); quitting = true; app.quit() })

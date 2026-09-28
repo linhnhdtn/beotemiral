@@ -29,14 +29,14 @@ const workspaceSchema = z.object({
   appearance: appearanceSchema.default({ backgroundTransparency: DEFAULT_BACKGROUND_TRANSPARENCY })
 }).superRefine((state, ctx) => {
   for (const items of [state.groups, state.sessions, state.templates]) {
-    if (new Set(items.map(item => item.id)).size !== items.length) ctx.addIssue({ code: 'custom', message: 'ID trùng lặp' })
+    if (new Set(items.map(item => item.id)).size !== items.length) ctx.addIssue({ code: 'custom', message: 'Duplicate ID' })
   }
-  if (state.sessions.some(s => !state.groups.some(g => g.id === s.groupId))) ctx.addIssue({ code: 'custom', message: 'Nhóm không tồn tại' })
+  if (state.sessions.some(s => !state.groups.some(g => g.id === s.groupId))) ctx.addIssue({ code: 'custom', message: 'Group does not exist' })
 })
 
 export function freshWorkspace(): Workspace {
   return {
-    version: 1, groups: [{ id: 'default', name: 'Không gian chung', color: '#55d6be' }],
+    version: 1, groups: [{ id: 'default', name: 'General', color: '#55d6be' }],
     sessions: [], templates: [], layout: { view: 'overview', groupId: null, activeId: null, splitId: null },
     appearance: { backgroundTransparency: DEFAULT_BACKGROUND_TRANSPARENCY }
   }
@@ -59,9 +59,9 @@ export class WorkspaceStore {
       if (!state.groups.some(g => g.id === state.layout.groupId)) state.layout.groupId = null
       return state
     } catch {
-      this.warning = 'Không đọc được cấu hình cũ. Đã mở không gian mới; bản cũ được giữ lại để khôi phục.'
+      this.warning = 'Could not read the previous configuration. A fresh workspace was opened; the old file was kept for recovery.'
       try { renameSync(this.file, `${this.file}.corrupt-${Date.now()}`) } catch {
-        this.warning = 'Không đọc được cấu hình. Không thể sao lưu tệp cũ; hãy kiểm tra quyền ghi thư mục dữ liệu.'
+        this.warning = 'Could not read the configuration or back up the old file; check write permissions on the data directory.'
       }
       return freshWorkspace()
     }

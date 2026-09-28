@@ -43,17 +43,17 @@ export default function AppearanceSettings({ value, preview, reportError }: {
   }
 
   return <details className="appearance-settings" onToggle={event => { if (!event.currentTarget.open) save() }}>
-    <summary className="button secondary" title="Giao diện · Độ trong suốt nền" aria-label="Giao diện"><Settings2 size={15}/><span>Giao diện</span></summary>
-    <section className="appearance-popover" aria-label="Cài đặt giao diện">
-      <div className="appearance-heading"><strong>Giao diện</strong><span>{value}%</span></div>
-      <label htmlFor="background-transparency">Độ trong suốt nền</label>
+    <summary className="button secondary" title="Appearance · Background transparency" aria-label="Appearance"><Settings2 size={15}/><span>Appearance</span></summary>
+    <section className="appearance-popover" aria-label="Appearance settings">
+      <div className="appearance-heading"><strong>Appearance</strong><span>{value}%</span></div>
+      <label htmlFor="background-transparency">Background transparency</label>
       <input id="background-transparency" type="range" min="0" max="100" step="1" value={value}
-        aria-valuetext={`${value}% trong suốt`} onChange={event => change(Number(event.target.value))}
+        aria-valuetext={`${value}% transparent`} onChange={event => change(Number(event.target.value))}
         onPointerUp={save} onKeyUp={save} onBlur={save}/>
-      <div className="appearance-range-labels"><span>0% · Nền đặc</span><span>100% · Trong suốt</span></div>
-      <p>Chỉ làm trong suốt nền. Chữ và nội dung terminal giữ nguyên độ rõ.</p>
-      <div className="appearance-footer"><button className="text-button" onClick={() => { change(DEFAULT_BACKGROUND_TRANSPARENCY); save() }}><Undo2 size={13}/>Mặc định {DEFAULT_BACKGROUND_TRANSPARENCY}%</button><span role="status">{saving ? 'Đang lưu…' : 'Tự động lưu'}</span></div>
-      <small>Áp dụng cho cửa sổ chính và cửa sổ riêng.</small>
+      <div className="appearance-range-labels"><span>0% · Solid</span><span>100% · Transparent</span></div>
+      <p>Only the background becomes transparent. Text and terminal content stay sharp.</p>
+      <div className="appearance-footer"><button className="text-button" onClick={() => { change(DEFAULT_BACKGROUND_TRANSPARENCY); save() }}><Undo2 size={13}/>Default {DEFAULT_BACKGROUND_TRANSPARENCY}%</button><span role="status">{saving ? 'Saving…' : 'Saved automatically'}</span></div>
+      <small>Applies to the main window and detached windows.</small>
     </section>
   </details>
 }

@@ -26,9 +26,9 @@ def main() -> None:
     executable = project / manifest["build"]["directories"]["output"] / "linux-unpacked/task-harbor"
     source_icon = project / "resources/icon.png"
     if not executable.is_file() or not os.access(executable, os.X_OK):
-        raise SystemExit("Chưa có bản đóng gói. Chạy npm run dist trước.")
+        raise SystemExit("No packaged build found. Run npm run dist first.")
     if not source_icon.is_file():
-        raise SystemExit("Không tìm thấy resources/icon.png.")
+        raise SystemExit("resources/icon.png not found.")
 
     data_home = Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local/share")
     applications = data_home / "applications"
@@ -41,8 +41,7 @@ def main() -> None:
         "Type=Application",
         "Name=Task Harbor",
         "GenericName=Terminal and AI agent manager",
-        "GenericName[vi]=Quản lý terminal và AI agent",
-        "Comment=Quản lý task, nhóm terminal và AI agent trên máy",
+        "Comment=Manage tasks, terminal groups and AI agents on this machine",
         f"Exec={command}",
         f"Icon={icon}",
         "Terminal=false",
@@ -64,7 +63,7 @@ def main() -> None:
     shutil.copyfile(source_icon, icon)
     launcher.write_text(content, encoding="utf-8")
     launcher.chmod(0o755)
-    print(f"Menu ứng dụng: {launcher}")
+    print(f"Application menu: {launcher}")
 
     desktop = None
     if shutil.which("xdg-user-dir"):
@@ -81,12 +80,12 @@ def main() -> None:
         if shutil.which("gio"):
             trusted = subprocess.run(["gio", "set", str(shortcut), "metadata::trusted", "true"], capture_output=True, text=True)
             if trusted.returncode:
-                print("Desktop: bấm chuột phải shortcut rồi chọn Allow Launching nếu được hỏi.")
-        print(f"Biểu tượng desktop: {shortcut}")
+                print("Desktop: right-click the shortcut and choose Allow Launching if prompted.")
+        print(f"Desktop icon: {shortcut}")
 
     if shutil.which("update-desktop-database"):
         subprocess.run(["update-desktop-database", str(applications)], check=True)
-    print("Đã cài shortcut. Ứng dụng chưa được mở.")
+    print("Shortcut installed. The app has not been launched.")
 
 
 if __name__ == "__main__":
