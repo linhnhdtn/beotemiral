@@ -51,7 +51,7 @@
     "appId": "dev.taskharbor.desktop",
     "productName": "Task Harbor",
     "directories": { "output": "release/0.1.5", "buildResources": "resources" },
-    "files": ["out/**/*", "resources/icon.png"],
+    "files": ["out/**/*", "resources/icon.png", "resources/icons/32x32.png"],
     "asarUnpack": ["node_modules/node-pty/**/*"],
     "deb": {
       "artifactName": "Task-Harbor-${version}-${arch}.${ext}",
@@ -65,7 +65,7 @@
       "syncDesktopName": true,
       "target": ["AppImage"],
       "category": "Development",
-      "icon": "resources/icon.png",
+      "icon": "resources/icons",
       "artifactName": "Task-Harbor-${version}-${arch}.${ext}"
     }
   }

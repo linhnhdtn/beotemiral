@@ -319,7 +319,7 @@ if (hasLock) void app.whenReady().then(() => {
   ]))
   try {
     if (process.env.TASK_HARBOR_NO_TRAY !== '1') {
-      const icon = nativeImage.createFromPath(join(app.getAppPath(), 'resources/icon.png')).resize({ width: 24, height: 24 })
+      const icon = nativeImage.createFromPath(join(app.getAppPath(), 'resources/icons/32x32.png')).resize({ width: 24, height: 24 })
       tray = new Tray(icon)
       tray.on('click', showMain)
       updateTray()
