@@ -18,7 +18,7 @@ test('switching groups restores each terminal and split without restarting sessi
     await app.evaluate(({ dialog }) => {
       dialog.showMessageBox = (async () => ({ response: 1, checkboxChecked: false })) as typeof dialog.showMessageBox
     })
-    await expect(page.getByRole('heading', { name: 'Không gian làm việc', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible()
     const ids = await page.evaluate(async () => {
       const api = window.harbor
       await api.updateGroup('default', { name: 'Alpha' })
@@ -87,7 +87,7 @@ test('switching groups restores each terminal and split without restarting sessi
     await switchGroup('Alpha')
     await expect(page.getByRole('heading', { name: 'Nhóm này đang trống' })).toBeVisible()
     await page.locator('.sidebar>.nav-item').click()
-    await expect(page.getByRole('heading', { name: 'Không gian làm việc', exact: true })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible()
     expect(errors).toEqual([])
   } finally {
     await app.evaluate(({ app }) => app.quit()).catch(() => {})

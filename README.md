@@ -76,7 +76,7 @@ Shortcut trỏ tới `release/0.1.5/linux-unpacked/task-harbor`; giữ nguyên t
 - Tạo nhóm, đặt tên/màu và sắp xếp thứ tự trong thanh bên. Mỗi nhóm có bộ đếm phiên; trạng thái đang chạy hiển thị ở từng terminal. Khi xóa nhóm có phiên, chọn nhóm nhận để giữ nguyên tiến trình; nếu xóa nhóm cuối, ứng dụng tạo lại “Không gian chung”.
 - Tạo terminal với tên task và thư mục làm việc; để trống lệnh để mở shell, hoặc nhập lệnh cần chạy. Chọn loại **AI agent** để nhận diện các CLI agent đã cài và đăng nhập trên máy.
 - Lưu mẫu lệnh để mở lại nhanh; nút bút chì ở mỗi terminal mở đầy đủ tên, loại phiên, nhóm, thư mục và lệnh khởi chạy. Nếu phiên đang chạy, thư mục/lệnh mới được lưu cho lần chạy tiếp theo; ứng dụng không tự dừng task hiện tại.
-- Chọn một phiên từ tổng quan để mở terminal; dùng cây nhóm/terminal bên trái hoặc chia đôi màn hình để làm việc cùng lúc với hai phiên. Trong lúc ứng dụng đang mở, mỗi nhóm nhớ terminal và khung chia đôi gần nhất: chuyển nhóm rồi quay lại sẽ mở đúng phiên, giữ lệnh đang gõ và tiến trình đang chạy. Nhóm chưa từng mở chọn phiên đầu tiên; nhóm trống hiện tổng quan. Nút **Tất cả phiên** vẫn mở danh sách tổng quan.
+- Chọn một phiên từ tổng quan để mở terminal; dùng cây nhóm/terminal bên trái hoặc chia đôi màn hình để làm việc cùng lúc với hai phiên. Trong lúc ứng dụng đang mở, mỗi nhóm nhớ terminal và khung chia đôi gần nhất: chuyển nhóm rồi quay lại sẽ mở đúng phiên, giữ lệnh đang gõ và tiến trình đang chạy. Nhóm chưa từng mở chọn phiên đầu tiên; nhóm trống hiện tổng quan. Nút **Dashboard** mở danh sách tổng quan.
 - **Tách cửa sổ** giữ nguyên tiến trình và màn hình terminal. Đóng cửa sổ riêng đưa phiên về cửa sổ chính.
 - Đóng cửa sổ chính giữ các task chạy nền. Mở lại từ tray hoặc chạy ứng dụng lần nữa; chỉ một bản ứng dụng quản lý workspace.
 - Nếu desktop không có tray, chạy lại ứng dụng để hiện cửa sổ cũ. Có thể kiểm tra chế độ này bằng `TASK_HARBOR_NO_TRAY=1 npm start`.
@@ -116,9 +116,9 @@ Các terminal dùng chung một lần quét tiến trình mỗi 300 ms. Khi dừ
 
 ## Nền trong suốt
 
-Bấm **Giao diện** trên thanh trên cùng, kéo **Độ trong suốt nền** từ 0–100%. Mặc định **70% trong suốt** (nền còn 30% độ đậm); 0% là nền đặc. Nút **Mặc định 70%** đưa về mức ban đầu. Chỉ nền thay đổi; chữ, con trỏ và nội dung terminal vẫn giữ nguyên độ rõ.
+Bấm nút **Giao diện** cạnh **Terminal mới** ở thanh bên trái, kéo **Độ trong suốt nền** từ 0–100%. Terminal dùng nền đen `#080808`, mặc định **0% trong suốt** (nền đặc) để dễ đọc. Nút **Mặc định 0%** đưa về mức ban đầu. Chỉ nền thay đổi; chữ, con trỏ và nội dung terminal vẫn giữ nguyên độ rõ.
 
-Mức đã chọn được lưu cùng workspace, áp dụng cho cả cửa sổ chính và terminal tách riêng. Thay đổi có hiệu lực ngay, không khởi động lại terminal hoặc lệnh đang chạy. Workspace của các bản cũ tự nhận mặc định 70% mà vẫn giữ nguyên nhóm và cấu hình phiên.
+Mức đã chọn được lưu cùng workspace, áp dụng cho cả cửa sổ chính và terminal tách riêng. Thay đổi có hiệu lực ngay, không khởi động lại terminal hoặc lệnh đang chạy. Workspace chưa có cài đặt giao diện nhận mặc định 0%; mức đã tùy chỉnh vẫn được giữ nguyên.
 
 ## Lưu dữ liệu và khôi phục
 

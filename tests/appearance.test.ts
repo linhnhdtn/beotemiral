@@ -12,7 +12,7 @@ function fixture(t: { after(fn: () => void): void }) {
   return { dir, file: join(dir, 'workspace.json') }
 }
 
-test('legacy workspaces gain 70% background transparency without losing saved work', t => {
+test('legacy workspaces gain an opaque background without losing saved work', t => {
   const { dir, file } = fixture(t)
   const { appearance: _appearance, ...legacy } = freshWorkspace()
   legacy.groups.unshift({ id: 'backend', name: 'Máy chủ', color: '#abcdef' })
@@ -29,8 +29,8 @@ test('legacy workspaces gain 70% background transparency without losing saved wo
 
   const store = new WorkspaceStore(file)
   const restored = store.load()
-  assert.equal(DEFAULT_BACKGROUND_TRANSPARENCY, 70)
-  assert.deepEqual(restored.appearance, { backgroundTransparency: 70 })
+  assert.equal(DEFAULT_BACKGROUND_TRANSPARENCY, 0)
+  assert.deepEqual(restored.appearance, { backgroundTransparency: 0 })
   assert.deepEqual(restored.groups, legacy.groups)
   assert.deepEqual(restored.templates, legacy.templates)
   assert.deepEqual(restored.layout, legacy.layout)
@@ -42,7 +42,7 @@ test('legacy workspaces gain 70% background transparency without losing saved wo
   assert.equal(readFileSync(file, 'utf8'), original, 'loading a legacy workspace does not rewrite it')
 
   store.save(restored)
-  assert.equal(JSON.parse(readFileSync(file, 'utf8')).appearance.backgroundTransparency, 70)
+  assert.equal(JSON.parse(readFileSync(file, 'utf8')).appearance.backgroundTransparency, 0)
   assert.deepEqual(new WorkspaceStore(file).load(), restored)
 })
 
@@ -85,7 +85,7 @@ test('fresh and migrated workspaces do not share their appearance defaults', t =
   const second = freshWorkspace()
   assert.notEqual(first.appearance, second.appearance)
   first.appearance.backgroundTransparency = 12
-  assert.equal(second.appearance.backgroundTransparency, 70)
+  assert.equal(second.appearance.backgroundTransparency, 0)
 
   const { appearance: _appearance, ...legacy } = freshWorkspace()
   writeFileSync(file, JSON.stringify(legacy))
@@ -93,6 +93,6 @@ test('fresh and migrated workspaces do not share their appearance defaults', t =
   const another = new WorkspaceStore(file).load()
   assert.notEqual(migrated.appearance, another.appearance)
   migrated.appearance.backgroundTransparency = 99
-  assert.equal(another.appearance.backgroundTransparency, 70)
-  assert.equal(new WorkspaceStore(file).load().appearance.backgroundTransparency, 70)
+  assert.equal(another.appearance.backgroundTransparency, 0)
+  assert.equal(new WorkspaceStore(file).load().appearance.backgroundTransparency, 0)
 })

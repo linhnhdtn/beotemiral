@@ -35,28 +35,39 @@ test('background transparency changes live, preserves terminals and survives res
       const bitmap = image.toBitmap()
       let maxAlpha = 0
       for (let index = 3; index < bitmap.length; index += 4) maxAlpha = Math.max(maxAlpha, bitmap[index])
-      return { alpha: bitmap[3], maxAlpha }
+      return { alpha: bitmap[3], maxAlpha, rgb: [bitmap[2], bitmap[1], bitmap[0]] }
     }, rect)
+  }
+  async function expectTerminalBackground(target: Page, alpha: number) {
+    // Fit rounds down to whole cells. The host's bottom/right remainder must
+    // have the same background as the cell grid, without stacking two fills.
+    for (const selector of ['.xterm-screen', '.terminal-host']) {
+      await expect.poll(async () => {
+        try { return (await pixels(target, selector)).alpha }
+        catch (error) {
+          // Electron can briefly reject captures while replacing a resized surface.
+          if (error instanceof Error && error.message.includes('UnknownVizError')) return -1
+          throw error
+        }
+      }).toBe(alpha)
+      if (alpha === 255) expect((await pixels(target, selector)).rgb).toEqual([8, 8, 8])
+    }
   }
   const getState = () => page.evaluate(() => window.harbor.getState())
   try {
     await launch()
-    expect((await getState()).appearance.backgroundTransparency).toBe(70)
-    await expect.poll(async () => (await pixels(page, '.overview')).alpha).toBeGreaterThanOrEqual(74)
-    expect((await pixels(page, '.overview')).alpha).toBeLessThanOrEqual(80)
+    expect((await getState()).appearance.backgroundTransparency).toBe(0)
+    await expect.poll(async () => (await pixels(page, '.overview')).alpha).toBe(255)
     expect((await pixels(page, '.brand strong', true)).maxAlpha).toBeGreaterThan(240)
     await page.getByLabel('Giao diện', { exact: true }).click()
     const slider = page.getByRole('slider', { name: 'Độ trong suốt nền', exact: true })
-    await expect(slider).toHaveValue('70')
-    await page.screenshot({ path: 'test-results/transparency-70.png', omitBackground: true })
-    await slider.press('Home')
-    await expect.poll(async () => (await getState()).appearance.backgroundTransparency).toBe(0)
-    await expect.poll(async () => (await pixels(page, '.overview')).alpha).toBe(255)
+    await expect(slider).toHaveValue('0')
+    await page.screenshot({ path: 'test-results/opaque-background.png', omitBackground: true })
     await slider.press('End')
     await expect.poll(async () => (await getState()).appearance.backgroundTransparency).toBe(100)
     await expect.poll(async () => (await pixels(page, '.overview')).alpha).toBe(0)
-    await page.getByRole('button', { name: 'Mặc định 70%', exact: true }).click()
-    await expect.poll(async () => (await getState()).appearance.backgroundTransparency).toBe(70)
+    await page.getByRole('button', { name: 'Mặc định 0%', exact: true }).click()
+    await expect.poll(async () => (await getState()).appearance.backgroundTransparency).toBe(0)
     await page.getByLabel('Giao diện', { exact: true }).click()
 
     const id = await page.evaluate(async () => {
@@ -69,22 +80,33 @@ test('background transparency changes live, preserves terminals and survives res
     })
     await expect(page.locator('.terminal-overlay')).toHaveCount(0)
     await expect.poll(async () => (await getState()).sessions.find(s => s.id === id)?.status).toBe('running')
+    for (const [width, height] of [[1111, 733], [940, 601]]) {
+      const nativeWindow = await app!.browserWindow(page)
+      await nativeWindow.evaluate((win, size) => win.setSize(size[0], size[1]), [width, height])
+      await expect.poll(() => page.evaluate(() => window.innerWidth)).toBe(width)
+      await expectTerminalBackground(page, 255)
+    }
+    await page.evaluate(() => window.harbor.updateAppearance({ backgroundTransparency: 50 }))
+    await expectTerminalBackground(page, 128)
+    await page.evaluate(() => window.harbor.updateAppearance({ backgroundTransparency: 0 }))
+    await expectTerminalBackground(page, 255)
+    await page.screenshot({ path: 'test-results/black-terminal.png' })
     const pid = (await getState()).sessions.find(s => s.id === id)!.pid
     const input = await page.locator('.xterm-helper-textarea').elementHandle()
     if (!input) throw new Error('Missing terminal input')
     await page.locator('.xterm-helper-textarea').focus()
     await page.keyboard.insertText('đang gõ dở')
     await page.getByLabel('Giao diện', { exact: true }).click()
-    await slider.press('ArrowLeft')
-    await expect.poll(async () => (await getState()).appearance.backgroundTransparency).toBe(69)
+    await slider.press('ArrowRight')
+    await expect.poll(async () => (await getState()).appearance.backgroundTransparency).toBe(1)
     await page.getByLabel('Giao diện', { exact: true }).click()
     expect(await input.evaluate(element => element.isConnected)).toBe(true)
     expect((await getState()).sessions.find(s => s.id === id)?.pid).toBe(pid)
     await page.locator('.xterm-helper-textarea').focus()
     await page.keyboard.press('Enter')
     await expect.poll(() => page.evaluate(async id => (await window.harbor.attachTerminal(id)).data, id)).toContain('RESULT:đang gõ dở')
-    await expect.poll(async () => (await pixels(page, '.xterm-screen')).alpha).toBeGreaterThanOrEqual(76)
-    expect((await pixels(page, '.xterm-screen')).alpha).toBeLessThanOrEqual(82)
+    await expect.poll(async () => (await pixels(page, '.xterm-screen')).alpha).toBeGreaterThanOrEqual(250)
+    expect((await pixels(page, '.xterm-screen')).alpha).toBeLessThan(255)
 
     const windowOpened = app!.waitForEvent('window')
     await page.evaluate(id => window.harbor.detachSession(id), id)
@@ -92,15 +114,17 @@ test('background transparency changes live, preserves terminals and survives res
     detached.on('pageerror', error => errors.push(error.message))
     await expect(detached.locator('.app')).toBeVisible()
     await expect(detached.locator('.terminal-overlay')).toHaveCount(0)
-    expect((await detached.evaluate(() => window.harbor.getState())).appearance.backgroundTransparency).toBe(69)
+    expect((await detached.evaluate(() => window.harbor.getState())).appearance.backgroundTransparency).toBe(1)
     await detached.getByLabel('Giao diện', { exact: true }).click()
     await detached.getByRole('slider', { name: 'Độ trong suốt nền', exact: true }).press('Home')
     await expect.poll(async () => (await getState()).appearance.backgroundTransparency).toBe(0)
-    await expect.poll(async () => (await pixels(detached, '.xterm-screen')).alpha).toBe(255)
-    await detached.getByRole('button', { name: 'Mặc định 70%', exact: true }).click()
-    await expect.poll(async () => (await getState()).appearance.backgroundTransparency).toBe(70)
+    await expectTerminalBackground(detached, 255)
+    await detached.getByRole('slider', { name: 'Độ trong suốt nền', exact: true }).press('End')
+    await expectTerminalBackground(detached, 0)
+    await detached.getByRole('button', { name: 'Mặc định 0%', exact: true }).click()
+    await expect.poll(async () => (await getState()).appearance.backgroundTransparency).toBe(0)
     await detached.getByRole('slider', { name: 'Độ trong suốt nền', exact: true }).press('ArrowRight')
-    await expect.poll(async () => (await getState()).appearance.backgroundTransparency).toBe(71)
+    await expect.poll(async () => (await getState()).appearance.backgroundTransparency).toBe(1)
     expect((await getState()).sessions.find(s => s.id === id)?.pid).toBe(pid)
 
     const rejected = await page.evaluate(async () => {
@@ -115,17 +139,17 @@ test('background transparency changes live, preserves terminals and survives res
       }))
     })
     expect(rejected).toEqual([true, true, true, true, true, true])
-    expect((await getState()).appearance.backgroundTransparency).toBe(71)
-    await expect.poll(() => JSON.parse(readFileSync(join(dataDir, 'workspace.json'), 'utf8')).appearance.backgroundTransparency).toBe(71)
+    expect((await getState()).appearance.backgroundTransparency).toBe(1)
+    await expect.poll(() => JSON.parse(readFileSync(join(dataDir, 'workspace.json'), 'utf8')).appearance.backgroundTransparency).toBe(1)
     const process = app!.process()
     await page.evaluate(() => window.harbor.quit()).catch(() => {})
     await expect.poll(() => process.exitCode).toBe(0)
     await app!.close().catch(() => {})
     app = undefined
     await launch()
-    expect((await getState()).appearance.backgroundTransparency).toBe(71)
+    expect((await getState()).appearance.backgroundTransparency).toBe(1)
     await page.getByLabel('Giao diện', { exact: true }).click()
-    await expect(page.getByRole('slider', { name: 'Độ trong suốt nền', exact: true })).toHaveValue('71')
+    await expect(page.getByRole('slider', { name: 'Độ trong suốt nền', exact: true })).toHaveValue('1')
     expect((await getState()).sessions.find(s => s.id === id)?.status).toBe('stopped')
     expect(errors).toEqual([])
   } finally {

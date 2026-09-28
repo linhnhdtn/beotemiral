@@ -16,7 +16,7 @@ export interface Session extends LaunchSpec {
 }
 export interface LaunchTemplate { id: string; name: string; kind: SessionKind; cwd: string; command: string }
 export interface Layout { view: 'overview' | 'terminal'; groupId: string | null; activeId: string | null; splitId: string | null }
-export const DEFAULT_BACKGROUND_TRANSPARENCY = 70
+export const DEFAULT_BACKGROUND_TRANSPARENCY = 0
 export interface Appearance { backgroundTransparency: number }
 export interface Workspace {
   version: 1
@@ -47,7 +47,7 @@ export interface HarborAPI {
   moveSession(id: string, groupId: string, beforeId?: string): Promise<void>
   stopSession(id: string): Promise<boolean>
   restartSession(id: string): Promise<void>
-  removeSession(id: string): Promise<boolean>
+  removeSession(id: string, confirmed?: boolean): Promise<boolean>
   attachTerminal(id: string): Promise<TerminalAttachment>
   releaseTerminal(id: string, leaseId: string): Promise<void>
   writeTerminal(id: string, data: string): Promise<void>
