@@ -179,9 +179,13 @@ function registerIPC(): void {
     return true
   })
   handle('restart-session', async (_e, id) => { await manager.restart(idSchema.parse(id)) })
-  handle('remove-session', async (event, id) => {
+  handle('remove-session', async (event, id, confirmed) => {
     const session = manager.get(idSchema.parse(id))
-    if (isLive(session) && !await confirm(BrowserWindow.fromWebContents(event.sender), `Xóa “${session.name}”?`, 'Phiên và lịch sử màn hình sẽ bị xóa. Lệnh đang chạy sẽ được dừng.', 'Dừng và xóa')) return false
+    const live = isLive(session)
+    // The editor confirms in-app; other callers still get the native prompt.
+    if (confirmed !== true && !await confirm(BrowserWindow.fromWebContents(event.sender), `Xóa “${session.name}”?`,
+      live ? 'Phiên và lịch sử màn hình sẽ bị xóa. Lệnh đang chạy và các tiến trình con sẽ được dừng.' : 'Phiên và lịch sử màn hình sẽ bị xóa. Không thể hoàn tác thao tác này.',
+      live ? 'Dừng và xóa' : 'Xóa phiên')) return false
     detached.get(id)?.close()
     await manager.remove(id)
     return true

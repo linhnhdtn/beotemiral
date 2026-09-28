@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Bot, Check, Folder, FolderOpen, LoaderCircle, Save, SquareTerminal } from 'lucide-react'
+import { Bot, Check, Folder, FolderOpen, LoaderCircle, Save, SquareTerminal, Trash2, TriangleAlert } from 'lucide-react'
 import type { AppState, LaunchSpec, Session } from '../../shared/types'
 
 export default function SessionEditor({ state, session, close }: {
@@ -15,11 +15,13 @@ export default function SessionEditor({ state, session, close }: {
     groupId: session.groupId
   })
   const [busy, setBusy] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const [choosingFolder, setChoosingFolder] = useState(false)
   const [error, setError] = useState('')
   const currentSession = state.sessions.find(item => item.id === session.id)
   const running = currentSession?.status === 'running' || currentSession?.status === 'starting'
-  const disabled = busy || choosingFolder
+  const disabled = busy || deleting || choosingFolder
   const patch = (value: Partial<LaunchSpec>) => setForm(current => ({ ...current, ...value }))
   const reportError = (error: unknown) => setError(
     (error instanceof Error ? error.message : String(error)).replace(/^Error invoking remote method '[^']+': (?:Error: )?/, '')
@@ -56,7 +58,21 @@ export default function SessionEditor({ state, session, close }: {
     }
   }
 
-  return <form className="form" onSubmit={event => void submit(event)} aria-busy={disabled}>
+  async function remove() {
+    if (disabled || !currentSession) return
+    setConfirming(false)
+    setDeleting(true)
+    setError('')
+    try {
+      if (await window.harbor.removeSession(session.id, true)) close()
+    } catch (error) {
+      reportError(error)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  return <><form className="form" inert={confirming} onSubmit={event => void submit(event)} aria-busy={disabled}>
     <div className="kind-options" role="group" aria-label="Loại phiên">
       <button type="button" disabled={disabled} aria-pressed={form.kind === 'terminal'} className={form.kind === 'terminal' ? 'active' : ''} onClick={() => patch({ kind: 'terminal' })}>
         <SquareTerminal size={22}/><span><strong>Terminal</strong><small>Shell & tác vụ thông thường</small></span>{form.kind === 'terminal' && <Check size={15}/>}
@@ -84,8 +100,24 @@ export default function SessionEditor({ state, session, close }: {
     {error && <div className="form-error" role="alert">{error}</div>}
     <div className="form-footer">
       <span><i className="connection-dot"/>Lưu cấu hình phiên</span>
+      <button type="button" className="button danger" disabled={disabled || !currentSession} onClick={() => { setError(''); setConfirming(true) }}>{deleting ? <LoaderCircle className="spin" size={15}/> : <Trash2 size={15}/>}Xóa phiên</button>
       <button type="button" className="button secondary" disabled={disabled} onClick={close}>Hủy</button>
       <button type="submit" className="button primary" disabled={disabled || !currentSession}>{busy ? <LoaderCircle className="spin" size={15}/> : <Save size={15}/>}Lưu thay đổi</button>
     </div>
   </form>
+  {confirming && <div className="modal-backdrop confirm-backdrop" onMouseDown={event => { if (event.target === event.currentTarget) setConfirming(false) }}
+    onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); setConfirming(false) } }}>
+    <div className="modal confirm-dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm-delete-title" aria-describedby="confirm-delete-detail">
+      <div className="confirm-icon"><TriangleAlert size={20}/></div>
+      <h3 id="confirm-delete-title">Xóa “{session.name}”?</h3>
+      <p id="confirm-delete-detail">{running
+        ? 'Phiên và lịch sử màn hình sẽ bị xóa. Lệnh đang chạy và các tiến trình con sẽ được dừng.'
+        : 'Phiên và lịch sử màn hình sẽ bị xóa. Không thể hoàn tác thao tác này.'}</p>
+      <div className="confirm-actions">
+        <button type="button" className="button secondary" autoFocus onClick={() => setConfirming(false)}>Hủy</button>
+        <button type="button" className="button danger" onClick={() => void remove()}><Trash2 size={15}/>{running ? 'Dừng và xóa' : 'Xóa phiên'}</button>
+      </div>
+    </div>
+  </div>}
+  </>
 }

@@ -26,7 +26,7 @@ test.beforeAll(async () => {
     dialog.showMessageBox = (async () => ({ response: 1, checkboxChecked: false })) as typeof dialog.showMessageBox
     dialog.showOpenDialog = (async () => ({ canceled: false, filePaths: ['/tmp'] })) as typeof dialog.showOpenDialog
   })
-  await expect(page.getByRole('heading', { name: 'Không gian làm việc', exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Dashboard', exact: true })).toBeVisible()
 })
 test.afterAll(async () => {
   if (child?.exitCode === null) {

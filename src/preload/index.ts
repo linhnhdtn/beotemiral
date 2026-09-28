@@ -16,7 +16,7 @@ const api: HarborAPI = {
   moveSession: (id, groupId, beforeId) => invoke('move-session', id, groupId, beforeId),
   stopSession: id => invoke('stop-session', id),
   restartSession: id => invoke('restart-session', id),
-  removeSession: id => invoke('remove-session', id),
+  removeSession: (id, confirmed) => invoke('remove-session', id, confirmed === true),
   attachTerminal: id => invoke('attach-terminal', id),
   releaseTerminal: (id, leaseId) => invoke('release-terminal', id, leaseId),
   writeTerminal: (id, data) => invoke('write-terminal', id, data),

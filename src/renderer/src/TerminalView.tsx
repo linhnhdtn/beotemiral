@@ -1,11 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { Check, ClipboardPaste, Copy, LoaderCircle, RefreshCw } from 'lucide-react'
 import type { Session, TerminalOutput } from '../../shared/types'
 import '@xterm/xterm/css/xterm.css'
 
-export default function TerminalView({ session, reportError, backgroundTransparency }: { session: Session; reportError: (message: string) => void; backgroundTransparency: number }) {
+export default function TerminalView({ session, reportError, backgroundTransparency, renderHeader }: { renderHeader: (clipboard: ReactNode) => ReactNode; session: Session; reportError: (message: string) => void; backgroundTransparency: number }) {
   const host = useRef<HTMLDivElement>(null)
   const terminal = useRef<Terminal | null>(null)
   const [loading, setLoading] = useState(true)
@@ -15,14 +15,7 @@ export default function TerminalView({ session, reportError, backgroundTranspare
   const [context, setContext] = useState<{ x: number; y: number } | null>(null)
   const reportRef = useRef(reportError)
   reportRef.current = reportError
-  const background = `rgba(38, 49, 61, ${(100 - backgroundTransparency) / 100})`
-  const backgroundRef = useRef(background)
-  backgroundRef.current = background
-
-  useEffect(() => {
-    const term = terminal.current
-    if (term) term.options.theme = { ...term.options.theme, background }
-  }, [background])
+  const background = `rgba(8, 8, 8, ${(100 - backgroundTransparency) / 100})`
 
   useEffect(() => {
     if (terminal.current) terminal.current.options.disableStdin = session.status !== 'running' && session.status !== 'starting'
@@ -50,9 +43,10 @@ export default function TerminalView({ session, reportError, backgroundTranspare
     let frame = 0
     const term = new Terminal({
       cursorBlink: true, cursorStyle: 'bar', fontFamily: '"JetBrains Mono", "DejaVu Sans Mono", "Liberation Mono", monospace',
-      fontSize: 13, lineHeight: 1.35, scrollback: 5000, allowProposedApi: false, allowTransparency: true,
+      fontSize: 15, lineHeight: 1.35, scrollback: 5000, allowProposedApi: false, allowTransparency: true,
       disableStdin: session.status !== 'running' && session.status !== 'starting',
-      theme: { background: backgroundRef.current, foreground: '#e3edf5', cursor: '#8ce8c7', selectionBackground: '#43665e',
+      // The host paints the full area, including space left over between character cells.
+      theme: { background: '#00000000', foreground: '#e5e5e5', cursor: '#8ce8c7', selectionBackground: '#43665e',
         black: '#202629', red: '#f28087', green: '#88d4a3', yellow: '#e4c98b', blue: '#8ab9f1', magenta: '#be9de9', cyan: '#7bcfc7', white: '#d5dce0',
         brightBlack: '#a2b4c3', brightRed: '#ff9aa1', brightGreen: '#aff1c3', brightYellow: '#f4dfb0', brightBlue: '#b0d5ff', brightMagenta: '#dec4ff', brightCyan: '#a1f2e9', brightWhite: '#ffffff' },
     })
@@ -100,11 +94,13 @@ export default function TerminalView({ session, reportError, backgroundTranspare
     }
   }, [session.id, session.startedAt, attempt])
 
-  return <div className="terminal-body" onClick={() => context && setContext(null)}>
-    <div className="terminal-tools"><span>{session.cwd}</span><div><button className="icon-button" title="Sao chép vùng chọn · Ctrl+Shift+C" aria-label="Sao chép vùng chọn" onClick={() => void copy()}>{copied ? <Check size={14}/> : <Copy size={14}/>}</button><button className="icon-button" title="Dán · Ctrl+Shift+V" aria-label="Dán vào terminal" onClick={() => void paste()}><ClipboardPaste size={14}/></button></div></div>
-    <div className="terminal-surface"><div className="terminal-host" ref={host} onContextMenu={(e) => { e.preventDefault(); setContext({ x: Math.min(e.clientX, window.innerWidth - 220), y: Math.min(e.clientY, window.innerHeight - 110) }) }}/></div>
+  return <>
+    {renderHeader(<div className="pane-clipboard"><button className="icon-button" title="Sao chép vùng chọn · Ctrl+Shift+C" aria-label="Sao chép vùng chọn" onClick={() => void copy()}>{copied ? <Check size={14}/> : <Copy size={14}/>}</button><button className="icon-button" title="Dán · Ctrl+Shift+V" aria-label="Dán vào terminal" onClick={() => void paste()}><ClipboardPaste size={14}/></button></div>)}
+    <div className="terminal-body" onClick={() => context && setContext(null)}>
+    <div className="terminal-surface"><div className="terminal-host" style={{ background }} ref={host} onContextMenu={(e) => { e.preventDefault(); setContext({ x: Math.min(e.clientX, window.innerWidth - 220), y: Math.min(e.clientY, window.innerHeight - 110) }) }}/></div>
     {loading && <div className="terminal-overlay"><LoaderCircle className="spin" size={22}/><span>Đang kết nối phiên…</span></div>}
     {error && <div className="terminal-overlay"><span>Không thể mở terminal</span><small>{error}</small><button className="button secondary" onClick={() => setAttempt(v => v + 1)}><RefreshCw size={14}/>Thử lại</button></div>}
     {context && <div className="context-menu" style={{ left: context.x, top: context.y }}><button onClick={() => void copy()}><Copy size={14}/>Sao chép vùng chọn</button><button onClick={() => void paste()}><ClipboardPaste size={14}/>Dán</button></div>}
-  </div>
+    </div>
+  </>
 }

@@ -154,7 +154,6 @@ export default function WorkspaceTree({
     if (dropTarget?.kind === kind && dropTarget.id === id) drop(event, dropTarget)
   }
   return <div className="workspace-tree">
-    <div className="tree-hint"><GripVertical size={12}/><span>Kéo thả để sắp xếp</span><span title="Dùng phím mũi tên để điều hướng, Alt + ↑ / ↓ để di chuyển và F2 để sửa">Alt ↑ ↓</span></div>
     <div className="group-list tree-list" role="tree" aria-label="Nhóm và terminal" onKeyDown={handleKeys} onDragEnd={endDrag} onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropTarget(null) }}>
       {state.groups.map((group, groupIndex) => {
         const sessions = sessionsByGroup.get(group.id) ?? []
@@ -180,7 +179,7 @@ export default function WorkspaceTree({
                 <GripVertical className="tree-grip" size={12} aria-hidden="true"/>
                 <button className="tree-select tree-session-select" tabIndex={-1} title={`${session.name}\n${session.cwd}\n${session.command || state.shell}\n${statusLabels[session.status]}${session.detached ? ' · Cửa sổ riêng' : ''}`} onClick={() => onOpenSession(session)}>
                   {session.kind === 'agent' ? <Bot className="tree-kind agent" size={15}/> : <SquareTerminal className="tree-kind" size={15}/>}
-                  <span className="tree-session-text"><span>{session.name}</span><small>{session.cwd === state.home ? '~' : session.cwd.startsWith(state.home + '/') ? '~' + session.cwd.slice(state.home.length) : session.cwd}</small></span>
+                  <span className="tree-session-text"><span>{session.name}</span></span>
                   {session.detached && <ArrowUpRight size={12} aria-label="Cửa sổ riêng"/>}
                   <i className={`tree-status ${session.status}`} aria-label={statusLabels[session.status]} title={statusLabels[session.status]}/>
                 </button>
