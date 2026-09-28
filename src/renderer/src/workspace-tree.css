@@ -14,12 +14,6 @@
 .tree-row-tools{display:flex;align-items:center;flex:none;gap:1px;margin-left:1px;margin-right:2px}
 .workspace-tree .tree-row-tools .icon-button{width:23px;height:25px}
 .workspace-tree .tree-edit{color:#99b8ba}
-.tree-reorder-tools{display:flex;align-items:center;max-width:0;opacity:0;overflow:hidden}
-.tree-group-row:hover>.tree-row-tools>.tree-reorder-tools,
-.tree-group-node:focus>.tree-group-row>.tree-row-tools>.tree-reorder-tools,
-.tree-group-row:focus-within>.tree-row-tools>.tree-reorder-tools,
-.tree-session-row:hover>.tree-row-tools>.tree-reorder-tools,
-.tree-session-row:focus-within>.tree-row-tools>.tree-reorder-tools{max-width:48px;opacity:1;overflow:visible}
 .tree-group-node:focus-visible>.tree-group-row,.tree-session-row:focus-visible{outline:2px solid var(--mint);outline-offset:1px}
 .tree-sessions{margin:0 0 7px 11px;padding-left:7px;border-left:1px solid #60748055}
 .tree-session-row{position:relative;display:flex;align-items:center;min-width:0;min-height:34px;border-radius:6px;outline:none;margin:2px 0;isolation:isolate}
@@ -53,6 +47,5 @@
 @media(min-width:1450px){.sidebar:has(> .workspace-tree){width:296px}}
 @media(max-width:1080px){.sidebar:has(> .workspace-tree){width:258px}}
 @media(max-width:900px){.sidebar:has(> .workspace-tree){width:248px}}
-@media(hover:none){.tree-reorder-tools{max-width:48px;opacity:1;overflow:visible}}
 
 .terminal-location{display:flex;align-items:center;gap:8px;flex:1;min-width:0;color:#a8c1cd;font-size:13px;padding:0 10px}.terminal-location>span,.terminal-location>strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.terminal-location>strong{color:#dce9ee;font-weight:500}.terminal-location>svg{flex:none}

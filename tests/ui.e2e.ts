@@ -57,8 +57,8 @@ test('Vietnamese workspace forms, terminal keyboard, templates and navigation', 
   await expect(dialog).toHaveCount(0)
   group = (await getState()).groups.find(g => g.id === group.id)!
   expect(group).toMatchObject({ name: 'AI Studio', color: '#78cbd8' })
-  await page.locator('.group-row').filter({ hasText: 'AI Studio' }).hover()
-  await page.getByRole('button', { name: 'Di chuyển nhóm AI Studio lên', exact: true }).click()
+  await page.getByRole('treeitem', { name: 'AI Studio', exact: true }).focus()
+  await page.keyboard.press('Alt+ArrowUp')
   await expect.poll(async () => (await getState()).groups[0].id).toBe(group.id)
   await page.locator('.group-row').filter({ hasText: 'AI Studio' }).locator('.nav-item').click()
 
@@ -116,10 +116,9 @@ test('Vietnamese workspace forms, terminal keyboard, templates and navigation', 
   await page.getByRole('button', { name: 'Bỏ bộ lọc', exact: true }).click()
 
   // Launch a second session from the saved template, then remove the template.
-  await page.getByRole('button', { name: /^Mẫu lệnh/ }).click()
+  await page.keyboard.press('Control+Shift+T')
   dialog = page.getByRole('dialog')
-  await dialog.getByRole('button', { name: 'Mở mẫu Agent kiểm thử', exact: true }).click()
-  dialog = page.getByRole('dialog')
+  await dialog.getByLabel('Dùng mẫu có sẵn', { exact: true }).selectOption({ label: 'Agent kiểm thử' })
   await expect(dialog.getByLabel('Tên phiên', { exact: true })).toHaveValue('Agent kiểm thử')
   await expect(dialog.getByRole('textbox', { name: 'Thư mục làm việc', exact: true })).toHaveValue('/tmp')
   await dialog.getByRole('button', { name: 'Terminal Shell & tác vụ thông thường', exact: true }).click()
@@ -130,10 +129,8 @@ test('Vietnamese workspace forms, terminal keyboard, templates and navigation', 
   await expect(dialog).toHaveCount(0)
   const second = (await getState()).sessions.find(s => s.name === 'Terminal phụ')!
   await expect.poll(() => snapshot(second.id)).toContain('SECOND READY')
-  await page.getByRole('button', { name: /^Mẫu lệnh/ }).click()
-  await page.getByRole('button', { name: 'Xóa mẫu Agent kiểm thử', exact: true }).click()
+  await page.evaluate(id => window.harbor.removeTemplate(id), (await getState()).templates[0].id)
   await expect.poll(async () => (await getState()).templates.length).toBe(0)
-  await page.keyboard.press('Escape')
 
   // Quick search focuses the correct real terminal; Ctrl+Tab remains a UI shortcut.
   await page.keyboard.press('Control+Shift+P')

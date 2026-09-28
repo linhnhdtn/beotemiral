@@ -30,14 +30,6 @@ export interface AppState extends Workspace { home: string; shell: string; warni
 export interface TerminalSnapshot { data: string; seq: number; cols: number; rows: number }
 export interface TerminalAttachment extends TerminalSnapshot { leaseId: string }
 export interface TerminalOutput { id: string; data: string; seq: number }
-export interface WorkspaceTransfer {
-  version: 1
-  groups: Group[]
-  sessions: LaunchSpec[]
-  templates: Omit<LaunchTemplate, 'id'>[]
-}
-export interface ImportPreview extends WorkspaceTransfer { token: string; fileName: string }
-export interface ImportResult { groups: number; sessions: number; templates: number }
 export interface HarborAPI {
   getState(): Promise<AppState>
   onState(listener: (state: AppState) => void): () => void
@@ -64,9 +56,6 @@ export interface HarborAPI {
   updateLayout(patch: Partial<Layout>): Promise<void>
   updateAppearance(patch: Partial<Appearance>): Promise<void>
   chooseDirectory(): Promise<string | null>
-  chooseImport(): Promise<ImportPreview | null>
-  importWorkspace(token: string): Promise<ImportResult>
-  exportWorkspace(): Promise<boolean>
   readClipboard(): Promise<string>
   writeClipboard(text: string): Promise<void>
   quit(): Promise<void>

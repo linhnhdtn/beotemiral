@@ -118,8 +118,7 @@ test('workspace tree reorders visually, edits live terminal safely and persists 
     await groupNode('Beta').focus()
     await page.keyboard.press('Alt+ArrowDown')
     await expect.poll(groupOrder).toEqual(['Alpha', 'Beta', 'Empty'])
-    await sessionNode('Alpha 2').hover()
-    await page.getByLabel('Di chuyển terminal Alpha 2 lên', { exact: true }).click()
+    await drag(sessionNode('Alpha 2'), sessionNode('Alpha 1'), 'before')
     await expect.poll(() => sessionOrder('Alpha')).toEqual(['Alpha 2', 'Alpha 1'])
     for (const process of before) {
       expect((await getState()).sessions.find(session => session.id === process.id)).toMatchObject(process)

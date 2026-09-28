@@ -1,5 +1,5 @@
 import { useRef, useState, type CSSProperties, type DragEvent, type KeyboardEvent } from 'react'
-import { ArrowDown, ArrowUp, ArrowUpRight, Bot, ChevronDown, ChevronRight, GripVertical, Pencil, Plus, SquareTerminal } from 'lucide-react'
+import { ArrowUpRight, Bot, ChevronDown, ChevronRight, GripVertical, Pencil, Plus, SquareTerminal } from 'lucide-react'
 import type { AppState, Group, Session } from '../../shared/types'
 import './workspace-tree.css'
 
@@ -155,7 +155,7 @@ export default function WorkspaceTree({
   }
   return <div className="workspace-tree">
     <div className="group-list tree-list" role="tree" aria-label="Nhóm và terminal" onKeyDown={handleKeys} onDragEnd={endDrag} onDragLeave={event => { if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropTarget(null) }}>
-      {state.groups.map((group, groupIndex) => {
+      {state.groups.map(group => {
         const sessions = sessionsByGroup.get(group.id) ?? []
         const running = sessions.filter(session => session.status === 'running' || session.status === 'starting').length
         const groupKey = `group:${group.id}`
@@ -164,16 +164,12 @@ export default function WorkspaceTree({
             <button className="icon-button tree-toggle" aria-label={`${group.collapsed ? 'Mở' : 'Thu gọn'} nhóm ${group.name}`} title={group.collapsed ? 'Mở nhóm' : 'Thu gọn nhóm'} onClick={() => onToggleGroup(group)}>{group.collapsed ? <ChevronRight size={14}/> : <ChevronDown size={14}/>}</button>
             <button className="nav-item tree-select" tabIndex={-1} title={`${group.name} · ${running}/${sessions.length} phiên đang chạy · Kéo để đổi vị trí`} onClick={() => onSelectGroup(group)}><span className="group-dot" style={{ '--group-color': group.color } as CSSProperties}/><span>{group.name}</span><span className="nav-count">{sessions.length}</span></button>
             <div className="tree-row-tools">
-              <div className="tree-reorder-tools">
-                <button className="icon-button" disabled={groupIndex === 0} aria-label={`Di chuyển nhóm ${group.name} lên`} title="Di chuyển nhóm lên" onClick={() => reorderGroup(group, -1)}><ArrowUp size={13}/></button>
-                <button className="icon-button" disabled={groupIndex === state.groups.length - 1} aria-label={`Di chuyển nhóm ${group.name} xuống`} title="Di chuyển nhóm xuống" onClick={() => reorderGroup(group, 1)}><ArrowDown size={13}/></button>
-              </div>
               <button className="icon-button" aria-label={`Tạo terminal trong nhóm ${group.name}`} title="Tạo terminal trong nhóm" onClick={() => onCreateSession(group.id)}><Plus size={14}/></button>
               <button className="icon-button tree-edit" aria-label={`Sửa nhóm ${group.name}`} title="Sửa nhóm (F2)" onClick={() => onEditGroup(group)}><Pencil size={13}/></button>
             </div>
           </div>
           {!group.collapsed && <div role="group" className="tree-sessions">
-            {sessions.map((session, index) => {
+            {sessions.map(session => {
               const sessionKey = `session:${session.id}`
               return <div key={session.id} ref={registerNode(sessionKey)} role="treeitem" aria-label={session.name} aria-selected={selectedSessionId === session.id} tabIndex={tabKey === sessionKey ? 0 : -1} data-tree-key={sessionKey} className={`tree-session-row ${selectedSessionId === session.id ? 'selected' : ''}${targetClass('session', session.id)}`} draggable onFocus={event => { if (event.target === event.currentTarget) setFocusedKey(sessionKey) }} onDragStart={event => startDrag(event, { kind: 'session', id: session.id })} onDragOver={event => dragOver(event, 'session', session.id)} onDrop={event => dropOnRow(event, 'session', session.id)}>
                 <GripVertical className="tree-grip" size={12} aria-hidden="true"/>
@@ -184,10 +180,6 @@ export default function WorkspaceTree({
                   <i className={`tree-status ${session.status}`} aria-label={statusLabels[session.status]} title={statusLabels[session.status]}/>
                 </button>
                 <div className="tree-row-tools">
-                  <div className="tree-reorder-tools">
-                    <button className="icon-button" disabled={index === 0} aria-label={`Di chuyển terminal ${session.name} lên`} title="Di chuyển terminal lên" onClick={() => reorderSession(session, -1)}><ArrowUp size={13}/></button>
-                    <button className="icon-button" disabled={index === sessions.length - 1} aria-label={`Di chuyển terminal ${session.name} xuống`} title="Di chuyển terminal xuống" onClick={() => reorderSession(session, 1)}><ArrowDown size={13}/></button>
-                  </div>
                   <button className="icon-button tree-edit" aria-label={`Sửa terminal ${session.name}`} title="Sửa terminal (F2)" onClick={() => onEditSession(session)}><Pencil size={13}/></button>
                 </div>
               </div>

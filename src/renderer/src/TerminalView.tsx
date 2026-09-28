@@ -46,9 +46,9 @@ export default function TerminalView({ session, reportError, backgroundTranspare
       fontSize: 15, lineHeight: 1.35, scrollback: 5000, allowProposedApi: false, allowTransparency: true,
       disableStdin: session.status !== 'running' && session.status !== 'starting',
       // The host paints the full area, including space left over between character cells.
-      theme: { background: '#00000000', foreground: '#e5e5e5', cursor: '#8ce8c7', selectionBackground: '#43665e',
-        black: '#202629', red: '#f28087', green: '#88d4a3', yellow: '#e4c98b', blue: '#8ab9f1', magenta: '#be9de9', cyan: '#7bcfc7', white: '#d5dce0',
-        brightBlack: '#a2b4c3', brightRed: '#ff9aa1', brightGreen: '#aff1c3', brightYellow: '#f4dfb0', brightBlue: '#b0d5ff', brightMagenta: '#dec4ff', brightCyan: '#a1f2e9', brightWhite: '#ffffff' },
+      theme: { background: '#00000000', foreground: '#4ec94e', cursor: '#4ec94e', selectionBackground: '#43665e',
+        black: '#202629', red: '#f28087', green: '#88d4a3', yellow: '#e4c98b', blue: '#5c9ded', magenta: '#be9de9', cyan: '#7bcfc7', white: '#d5dce0',
+        brightBlack: '#a2b4c3', brightRed: '#ff9aa1', brightGreen: '#aff1c3', brightYellow: '#f4dfb0', brightBlue: '#78b2f5', brightMagenta: '#dec4ff', brightCyan: '#a1f2e9', brightWhite: '#ffffff' },
     })
     const fit = new FitAddon()
     term.loadAddon(fit); term.open(container); terminal.current = term

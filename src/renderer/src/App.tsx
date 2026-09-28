@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react'
-import { Activity, ArrowLeft, ArrowUpRight, Bot, Check, ChevronDown, ChevronRight, CircleHelp, Command, Folder, FolderOpen, Layers3, LayoutGrid, LoaderCircle, MoreHorizontal, PanelsTopLeft, Plus, Power, Search, Settings2, Square, SquareTerminal, TerminalSquare, Trash2, Undo2, X } from 'lucide-react'
+import { Activity, ArrowLeft, ArrowUpRight, Bot, Check, ChevronDown, ChevronRight, Folder, FolderOpen, Layers3, LayoutGrid, LoaderCircle, MoreHorizontal, PanelsTopLeft, Plus, Power, Search, Settings2, Square, SquareTerminal, TerminalSquare, Trash2, Undo2, X } from 'lucide-react'
 import type { AppState, Group, LaunchSpec, LaunchTemplate, Session } from '../../shared/types'
 import TerminalView from './TerminalView'
 import AppearanceSettings from './AppearanceSettings'
 import WorkspaceTree from './WorkspaceTree'
 import SessionEditor from './SessionEditor'
-import WorkspaceTransfer from './WorkspaceTransfer'
 import { version as appVersion } from '../../../package.json'
 
 const api = window.harbor
@@ -17,7 +16,7 @@ const shortPath = (path: string, home: string) => path === home ? '~' : path.sta
 function duration(start: string, end?: string) { const m = Math.max(0, Math.floor((new Date(end || Date.now()).getTime() - new Date(start).getTime()) / 60000)); return m < 1 ? 'vừa bắt đầu' : m < 60 ? `${m} phút` : `${Math.floor(m / 60)} giờ ${m % 60} phút` }
 function Status({ session }: { session: Session }) { return <span className={`status ${session.status}`}><i/>{session.restored ? 'Chưa chạy lại' : labels[session.status]}</span> }
 function SessionIcon({ kind, size = 19 }: { kind: Session['kind']; size?: number }) { return kind === 'agent' ? <Bot size={size}/> : <SquareTerminal size={size}/> }
-type Modal = { type: 'new'; template?: LaunchTemplate; groupId?: string } | { type: 'group'; group?: Group } | { type: 'session'; session: Session } | { type: 'templates' } | { type: 'search' } | { type: 'help' } | { type: 'transfer' } | null
+type Modal = { type: 'new'; template?: LaunchTemplate; groupId?: string } | { type: 'group'; group?: Group } | { type: 'session'; session: Session } | { type: 'search' } | null
 
 export default function App() {
   const [state, setState] = useState<AppState | null>(null)
@@ -127,7 +126,7 @@ export default function App() {
         onToggleGroup={group => void act(() => api.updateGroup(group.id, { collapsed: !group.collapsed }))}
         onReorderGroups={ids => void act(() => api.reorderGroups(ids))}
         onMoveSession={(id, groupId, beforeId) => void act(() => api.moveSession(id, groupId, beforeId))}/>
-      <div className="sidebar-bottom"><button className="nav-item" onClick={() => setModal({ type: 'transfer' })}><FolderOpen size={17}/><span>Nhập / Xuất cấu hình</span></button><button className="nav-item" onClick={() => setModal({ type: 'templates' })}><Command size={17}/><span>Mẫu lệnh</span><span className="nav-count">{state.templates.length}</span></button><button className="nav-item" onClick={() => setModal({ type: 'help' })}><CircleHelp size={17}/><span>Phím tắt & hướng dẫn</span></button><div className="local-workspace"><div className="local-avatar"><TerminalSquare size={18}/></div><div><strong>Trên máy của bạn</strong><span><i/>{live.length} phiên đang chạy</span></div><button className="icon-button" title="Thoát hoàn toàn" aria-label="Thoát hoàn toàn" onClick={() => void act(() => api.quit())}><Power size={16}/></button></div></div>
+      <div className="sidebar-bottom"><div className="local-workspace"><div className="local-avatar"><TerminalSquare size={18}/></div><div><strong>Trên máy của bạn</strong><span><i/>{live.length} phiên đang chạy</span></div><button className="icon-button" title="Thoát hoàn toàn" aria-label="Thoát hoàn toàn" onClick={() => void act(() => api.quit())}><Power size={16}/></button></div></div>
     </aside>}
     <main className="main">
       {detachedId && <header className="topbar"><div className="breadcrumbs"><PanelsTopLeft size={18}/><span>Task Harbor</span><ChevronRight size={13}/><strong>{active?.name || 'Terminal'}</strong></div><div className="topbar-actions"><AppearanceSettings value={backgroundTransparency} preview={setAppearancePreview} reportError={reportError}/><button className="button secondary" onClick={() => active && void act(() => api.dockSession(active.id))}><Undo2 size={15}/>Về cửa sổ chính</button></div></header>}
@@ -171,10 +170,7 @@ function ModalContent({ modal, state, close, setModal, openSession, act }: { mod
   if (modal.type === 'new') return <NewSession state={state} template={modal.template} groupId={modal.groupId} close={close}/>
   if (modal.type === 'group') return <GroupForm state={state} group={modal.group} close={close}/>
   if (modal.type === 'session') return <SessionForm state={state} session={modal.session} close={close}/>
-  if (modal.type === 'transfer') return <ModalFrame title="Nhập / Xuất cấu hình" subtitle="Mang nhóm và cấu hình terminal sang không gian làm việc của bạn." close={close}><WorkspaceTransfer close={close}/></ModalFrame>
-  if (modal.type === 'search') return <QuickSearch state={state} close={close} openSession={openSession}/>
-  if (modal.type === 'templates') return <ModalFrame title="Mẫu lệnh của bạn" subtitle="Lưu một lần, mở lại công việc quen thuộc chỉ với một chạm." close={close}><div className="template-list">{state.templates.length ? state.templates.map(t => <div className="template-row" key={t.id}><div className={`session-symbol ${t.kind}`}><SessionIcon kind={t.kind}/></div><button className="template-main" onClick={() => setModal({ type: 'new', template: t })}><strong>{t.name}</strong><code>{t.command || state.shell}</code><small>{shortPath(t.cwd, state.home)}</small></button><button className="icon-button" title={`Xóa mẫu ${t.name}`} aria-label={`Xóa mẫu ${t.name}`} onClick={() => void act(() => api.removeTemplate(t.id))}><Trash2 size={15}/></button><button className="icon-button" title={`Mở mẫu ${t.name}`} aria-label={`Mở mẫu ${t.name}`} onClick={() => setModal({ type: 'new', template: t })}><ArrowUpRight size={17}/></button></div>) : <div className="modal-empty"><Command size={29}/><h3>Chưa có mẫu lệnh</h3><p>Chọn “Lưu thành mẫu” khi tạo terminal mới.</p><button className="button primary" onClick={() => setModal({ type: 'new' })}><Plus size={15}/>Tạo terminal</button></div>}</div></ModalFrame>
-  return <ModalFrame title="Làm việc liền mạch" subtitle="Những thao tác nhỏ giúp bạn tập trung vào công việc." close={close}><div className="shortcut-list">{[['Tạo terminal mới', 'Ctrl + Shift + T'], ['Tìm và chuyển nhanh đến phiên', 'Ctrl + Shift + P'], ['Chuyển sang phiên tiếp theo', 'Ctrl + Tab'], ['Chuyển sang phiên trước', 'Ctrl + Shift + Tab'], ['Sao chép vùng chọn terminal', 'Ctrl + Shift + C'], ['Dán vào terminal', 'Ctrl + Shift + V'], ['Dừng lệnh trong terminal', 'Ctrl + C']].map(([name, key]) => <div key={name}><span>{name}</span><kbd>{key}</kbd></div>)}</div><div className="help-note"><strong>Đóng cửa sổ vẫn tiếp tục chạy</strong><p>Mở lại từ khay hệ thống hoặc biểu tượng ứng dụng. Chọn nút nguồn ở thanh bên để thoát hoàn toàn.</p><strong>AI agent chạy bằng lệnh của bạn</strong><p>Chọn loại AI agent và nhập lệnh CLI đã cài trên máy. Trạng thái hiển thị theo tiến trình; cấu hình được giữ lại khi mở lại ứng dụng.</p></div></ModalFrame>
+  return <QuickSearch state={state} close={close} openSession={openSession}/>
 }
 
 function NewSession({ state, template, groupId, close }: { state: AppState; template?: LaunchTemplate; groupId?: string; close: () => void }) {
