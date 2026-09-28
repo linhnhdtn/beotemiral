@@ -58,7 +58,7 @@ test('background transparency changes live, preserves terminals and survives res
     await launch()
     expect((await getState()).appearance.backgroundTransparency).toBe(0)
     await expect.poll(async () => (await pixels(page, '.overview')).alpha).toBe(255)
-    expect((await pixels(page, '.brand strong', true)).maxAlpha).toBeGreaterThan(240)
+    expect((await pixels(page, '.overview-heading h1', true)).maxAlpha).toBeGreaterThan(240)
     await page.getByLabel('Appearance', { exact: true }).click()
     const slider = page.getByRole('slider', { name: 'Background transparency', exact: true })
     await expect(slider).toHaveValue('0')
